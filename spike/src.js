@@ -1,6 +1,6 @@
 import Jpi from './jpi';
-import http from 'http';
 import JpiError from 'jpi-error';
+import http from 'http';
 
 const app = new Jpi();
 const server = http.createServer(app.getCallback());
@@ -15,7 +15,7 @@ app.register({
 			{ params: ctx.params }
 		);
 	}
-} ,(ctx) => {
+}, (ctx) => {
 	return {
 		bar: 'baz',
 		params: ctx.params,

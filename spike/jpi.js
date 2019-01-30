@@ -123,7 +123,7 @@ export default class Jpi {
 					response.end(JSON.stringify({
 						result: null,
 						error: err.toObject(),
-						id
+						id,
 					}));
 				}
 			}
