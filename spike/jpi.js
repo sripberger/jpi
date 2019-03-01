@@ -1,6 +1,22 @@
+import {
+	InternalJpiError,
+	MethodNotAllowedError,
+	NotFoundError,
+} from './errors';
+
+import {
+	InvalidRequestError,
+	JpiError,
+	MethodNotFoundError,
+	ParseError,
+	RequestFailedError,
+	ServerError,
+	toObject,
+} from 'jpi-errors';
+
 import ContextManager from '../lib/context-manager';
-import JpiError from 'jpi-error';
 import _ from 'lodash';
+import { is } from 'nani';
 import zstreams from 'zstreams';
 
 export default class Jpi {
@@ -27,13 +43,11 @@ export default class Jpi {
 			try {
 				try {
 					// Ensure url path is root.
-					if (request.url !== '/') {
-						throw new JpiError(JpiError.NOT_FOUND);
-					}
+					if (request.url !== '/') throw new NotFoundError();
 
 					// Ensure method is POST.
 					if (request.method !== 'POST') {
-						throw new JpiError(JpiError.METHOD_NOT_ALLOWED);
+						throw new MethodNotAllowedError();
 					}
 
 					// Get the whole request body.
@@ -41,38 +55,33 @@ export default class Jpi {
 					try {
 						body = await zstreams(request).intoString();
 					} catch (err) {
-						throw new JpiError(JpiError.REQUEST_FAILED, err);
+						throw new RequestFailedError();
 					}
 
 					// Parse the request body as JSON.
 					try {
 						body = JSON.parse(body);
 					} catch (err) {
-						throw new JpiError(JpiError.PARSE_ERROR, err);
+						throw new ParseError(err);
 					}
 
 					// Get JSON-RPC fields from request body.
 					let method, params;
 					({ method, params, id } = body);
 					if (!method) {
-						throw new JpiError(
-							JpiError.INVALID_REQUEST,
+						throw new InvalidRequestError(
 							'No method in request body'
 						);
 					}
 					if (!params) {
-						throw new JpiError(
-							JpiError.INVALID_REQUEST,
+						throw new InvalidRequestError(
 							'No params in request body'
 						);
 					}
 
 					// Make sure method is registered.
 					if (!(method in this.methods)) {
-						throw new JpiError(
-							JpiError.METHOD_NOT_FOUND,
-							{ method }
-						);
+						throw new MethodNotFoundError({ info: { method } });
 					}
 
 					// Get options and middlewares from method registry.
@@ -102,27 +111,28 @@ export default class Jpi {
 						id,
 					}));
 				} catch (err) {
-					// Wrap any non-jpi errors in a generic server error.
-					if (err.isJpiError) throw err;
-					throw new JpiError(JpiError.SERVER_ERROR, err);
+					// Rethrow JpiErrors with valid codes.
+					if (is(JpiError, err) && Number.isInteger(err.code)) {
+						throw err;
+					}
+					// Wrap all others in a generic server error.
+					throw new ServerError(err);
 				}
 			} catch (err) {
-				if (err.code === JpiError.NOT_FOUND) {
-					// Send 404 response.
-					response.statusCode = 404;
-					response.end('Not Found');
-				} else if (err.code === JpiError.METHOD_NOT_ALLOWED) {
-					// Send 405 response.
-					response.statusCode = 405;
-					response.setHeader('Allow', 'POST');
-					response.end('Method Not Allowed');
+				if (is(InternalJpiError, err)) {
+					// Send response for internal jpi error.
+					const { statusCode, headers } = err.info;
+					response.statusCode = statusCode;
+					for (const key in headers) {
+						response.setHeader(key, headers[key]);
+					}
 				} else {
 					// Send normal JSON-RPC error response.
 					response.statusCode = 200;
 					response.setHeader('Content-Type', 'application/json');
 					response.end(JSON.stringify({
 						result: null,
-						error: err.toObject(),
+						error: toObject(err),
 						id,
 					}));
 				}
