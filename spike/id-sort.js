@@ -13,24 +13,15 @@ class Graph {
 		if (before) edges.push(this.nodesById[before]);
 		if (after) this.nodesById[after].edges.push(node);
 	}
-
-	getAllNodes() {
-		return new Set(values(this.nodesById));
-	}
 }
 
 class Search {
 	constructor(graph) {
-		this.graph = graph;
-		this.unvisitedNodes = graph.getAllNodes();
+		this.unvisitedNodes = new Set(values(graph.nodesById));
 		this.result = [];
 	}
 
-	get hasUnvisitedNodes() {
-		return !isEmpty(this.unvisitedNodes);
-	}
-
-	get nextNode() {
+	getNextNode() {
 		let nextNode = null;
 		for (const node of this.unvisitedNodes) {
 			if (!nextNode || node.id > nextNode.id) nextNode = node;
@@ -39,7 +30,7 @@ class Search {
 	}
 
 	run() {
-		while (this.hasUnvisitedNodes) this.visit(this.nextNode);
+		while (!isEmpty(this.unvisitedNodes)) this.visit(this.getNextNode());
 		return this.result;
 	}
 
