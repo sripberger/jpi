@@ -97,7 +97,7 @@ export default class Jpi {
 					});
 
 					// Run method middlewares.
-					await manager.runMiddleware(...middlewares);
+					await manager.runMiddlewares(middlewares);
 
 					// If an error occurred in middleware, throw it.
 					if (manager.context.error) throw manager.context.error;

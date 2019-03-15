@@ -15,13 +15,14 @@ describe('ContextManager', function() {
 		expect(manager.context).to.deep.equal({});
 	});
 
-	describe('::runMiddleware', function() {
-		let manager, mw1, mw2, _runSingleMiddleware;
+	describe('::runMiddlewares', function() {
+		const mw1 = () => {};
+		const mw2 = () => {};
+		const middlewares = [ mw1, mw2 ];
+		let manager, _runSingleMiddleware;
 
 		beforeEach(function() {
 			manager = new ContextManager();
-			mw1 = () => {};
-			mw2 = () => {};
 			_runSingleMiddleware = sinon.stub(manager, '_runSingleMiddleware');
 		});
 
@@ -47,7 +48,7 @@ describe('ContextManager', function() {
 					});
 				});
 
-			await manager.runMiddleware(mw1, mw2);
+			await manager.runMiddlewares(middlewares);
 
 			expect(_runSingleMiddleware).to.be.calledTwice;
 			expect(_runSingleMiddleware).to.always.be.calledOn(manager);
@@ -57,35 +58,11 @@ describe('ContextManager', function() {
 			expect(mw2.done).to.be.true;
 		});
 
-		it('does nothing if result is already set', async function() {
-			manager.context.result = 'Some result';
-			_runSingleMiddleware.resolves();
-
-			await manager.runMiddleware(mw1, mw2);
-
-			expect(_runSingleMiddleware).to.not.be.called;
-		});
-
-		it('stops if result is set by a middleware', async function() {
-			_runSingleMiddleware
-				.onFirstCall().callsFake(function() {
-					manager.context.result = 'Some result';
-					return Promise.resolve();
-				})
-				.onSecondCall().resolves();
-
-			await manager.runMiddleware(mw1, mw2);
-
-			expect(_runSingleMiddleware).to.be.calledOnce;
-			expect(_runSingleMiddleware).to.be.calledOn(manager);
-			expect(_runSingleMiddleware).to.be.calledWith(mw1);
-		});
-
 		it('does nothing if error is already set', async function() {
 			manager.context.error = new Error('wow an error');
 			_runSingleMiddleware.resolves();
 
-			await manager.runMiddleware(mw1, mw2);
+			await manager.runMiddlewares(middlewares);
 
 			expect(_runSingleMiddleware).to.not.be.called;
 		});
@@ -98,7 +75,7 @@ describe('ContextManager', function() {
 				})
 				.onSecondCall().resolves();
 
-			await manager.runMiddleware(mw1, mw2);
+			await manager.runMiddlewares(middlewares);
 
 			expect(_runSingleMiddleware).to.be.calledOnce;
 			expect(_runSingleMiddleware).to.be.calledOn(manager);
@@ -123,7 +100,7 @@ describe('ContextManager', function() {
 			);
 		});
 
-		it('assigns truthy middleware result onto context', async function() {
+		it('assigns middleware result onto context', async function() {
 			const result = { foo: 'bar' };
 			middleware.returns(result);
 
@@ -132,9 +109,15 @@ describe('ContextManager', function() {
 			expect(manager.context.result).to.equal(result);
 		});
 
-		it('does not assign falsy middleware result onto context', async function() {
+		it('supports falsy middleware results', async function() {
 			middleware.returns(false);
 
+			await manager._runSingleMiddleware(middleware);
+
+			expect(manager.context.result).to.be.false;
+		});
+
+		it('does not assign undefined middleware result onto context', async function() {
 			await manager._runSingleMiddleware(middleware);
 
 			expect(manager.context).to.not.have.property('result');
