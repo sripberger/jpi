@@ -13,19 +13,19 @@
   },
   "main": "cjs",
   "dependencies": {
-    "esm": "^3.2.7",
-    "jpi-errors": "^1.1.0",
+    "esm": "^3.2.17",
+    "jpi-errors": "^1.1.3",
     "lodash": "^4.17.11",
-    "nani": "^2.2.0",
+    "nani": "^2.3.1",
     "zstreams": "^4.0.1"
   },
   "devDependencies": {
-    "@sripberger/eslint-config": "^1.0.3",
+    "@sripberger/eslint-config": "^1.0.4",
     "chai": "^4.2.0",
-    "eslint": "^5.14.1",
-    "eslint-plugin-jsdoc": "^4.1.1",
+    "eslint": "^5.15.1",
+    "eslint-plugin-jsdoc": "^4.4.1",
     "mocha": "^6.0.2",
-    "sinon": "^7.2.5",
+    "sinon": "^7.2.7",
     "sinon-chai": "^3.3.0"
   }
 }
