@@ -1,4 +1,4 @@
-import ContextManager from '../../lib/context-manager';
+import { ContextManager } from '../../lib/context-manager';
 
 describe('ContextManager', function() {
 	it('stores the provided context object', function() {

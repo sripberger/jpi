@@ -1,4 +1,4 @@
-import Application from '../../lib/application';
+import { Application } from '../../lib/application';
 
 describe('Application', function() {
 	let application;
