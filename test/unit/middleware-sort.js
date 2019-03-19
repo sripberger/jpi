@@ -141,6 +141,15 @@ describe('MiddlewareSort', function() {
 
 			expect(sort.ids).to.equal(solution);
 		});
+
+		it('does nothing if ids property is already set', function() {
+			const ids = sort.ids = [ 'bar', 'baz' ];
+
+			sort.finalize();
+
+			expect(problem.solve).to.not.be.called;
+			expect(sort.ids).to.equal(ids);
+		});
 	});
 
 	describe('::_normalizeRegisterArgs', function() {
