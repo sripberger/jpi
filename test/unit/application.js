@@ -1,3 +1,4 @@
+import * as requestHandlerModule from '../../lib/request-handler';
 import { Application } from '../../lib/application';
 import { MethodManager } from '../../lib/method-manager';
 import { MiddlewareManager } from '../../lib/middleware-manager';
@@ -78,24 +79,35 @@ describe('Application', function() {
 		});
 
 		describe('returned function', function() {
-			it('invokes #_handleRequest with reqqest and reponse', function() {
-				const request = {};
-				const response = {};
-				sinon.stub(application, '_handleRequest');
+			let request, response, handler;
+
+			beforeEach(function() {
+				request = {};
+				response = {};
+				handler = sinon.createStubInstance(
+					requestHandlerModule.RequestHandler
+				);
+				sinon.stub(requestHandlerModule, 'RequestHandler')
+					.returns(handler);
 
 				callback(request, response);
+			});
 
-				expect(application._handleRequest).to.be.calledOnce;
-				expect(application._handleRequest).to.be.calledOn(application);
-				expect(application._handleRequest).to.be.calledWith(
+			it('creates a request handler with required arguments', function() {
+				expect(requestHandlerModule.RequestHandler).to.be.calledOnce;
+				expect(requestHandlerModule.RequestHandler).to.be.calledWithNew;
+				expect(requestHandlerModule.RequestHandler).to.be.calledWith(
 					sinon.match.same(request),
-					sinon.match.same(response)
+					sinon.match.same(response),
+					sinon.match.same(application._middlewareManager),
+					sinon.match.same(application._methodManager)
 				);
 			});
-		});
-	});
 
-	describe('#_handleRequest', function() {
-		it('handles a request');
+			it('runs the request handler', function() {
+				expect(handler.run).to.be.calledOnce;
+				expect(handler.run).to.be.calledOn(handler);
+			});
+		});
 	});
 });
