@@ -1,4 +1,5 @@
 import { MethodManager } from '../../lib/method-manager';
+import { MethodNotFoundError } from 'jpi-errors';
 
 describe('MethodManager', function() {
 	let manager;
@@ -74,6 +75,30 @@ describe('MethodManager', function() {
 			expect(() => {
 				manager.register({ method: '' }, middleware);
 			}).to.throw('method must be a non-empty string');
+		});
+	});
+
+	describe('#getMethod', function() {
+		beforeEach(function() {
+			manager._methods.foo = {};
+			manager._methods.bar = {};
+		});
+
+		it('returns entry for specified method', function() {
+			expect(manager.getMethod('foo')).to.equal(manager._methods.foo);
+			expect(manager.getMethod('bar')).to.equal(manager._methods.bar);
+		});
+
+		it('throws if specified method does not exist', function() {
+			expect(() => {
+				manager.getMethod('baz');
+			}).to.throw(MethodNotFoundError).that.satisfies((err) => {
+				const info = { method: 'baz' };
+				const message = MethodNotFoundError.getDefaultMessage(info);
+				expect(err.message).to.equal(message);
+				expect(err.info).to.deep.equal(info);
+				return true;
+			});
 		});
 	});
 });
