@@ -9,7 +9,7 @@ describe('FinalizedError', function() {
 	describe('::getDefaultMessage', function() {
 		it('returns an appropriate message', function() {
 			expect(FinalizedError.getDefaultMessage()).to.equal(
-				'Cannot register to a finalized middleware manager'
+				'Cannot register to a finalized middleware sort'
 			);
 		});
 	});

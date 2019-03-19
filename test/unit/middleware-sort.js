@@ -1,46 +1,46 @@
 import { FinalizedError } from '../../lib/finalized-error';
-import { MiddlewareManager } from '../../lib/middleware-manager';
+import { MiddlewareSort } from '../../lib/middleware-sort';
 import { Problem } from 'topo-strict';
 import _ from 'lodash';
 
-describe('MiddlewareManager', function() {
-	let manager;
+describe('MiddlewareSort', function() {
+	let sort;
 
 	beforeEach(function() {
-		manager = new MiddlewareManager();
+		sort = new MiddlewareSort();
 	});
 
 	it('creates a topo-strict Problem for ordering ids', function() {
-		expect(manager.problem).to.be.an.instanceof(Problem);
+		expect(sort.problem).to.be.an.instanceof(Problem);
 	});
 
 	it('creates a null property for storing the finalized id order', function() {
-		expect(manager.ids).to.be.null;
+		expect(sort.ids).to.be.null;
 	});
 
 	it('creates an object for storing middlewares by id', function() {
-		expect(manager._middlewaresById).to.deep.equal({});
+		expect(sort._middlewaresById).to.deep.equal({});
 	});
 
 	describe('@middlewares', function() {
 		it('returns ids mapped to middlewares', function() {
 			const fooMiddleware = () => {};
 			const barMiddleware = () => {};
-			manager.ids = [ 'foo', 'bar' ];
-			manager._middlewaresById = {
+			sort.ids = [ 'foo', 'bar' ];
+			sort._middlewaresById = {
 				foo: fooMiddleware,
 				bar: barMiddleware,
 				baz: () => {},
 			};
 
-			expect(manager.middlewares).to.deep.equal([
+			expect(sort.middlewares).to.deep.equal([
 				fooMiddleware,
 				barMiddleware,
 			]);
 		});
 
 		it('returns null if ids is null', function() {
-			expect(manager.middlewares).to.be.null;
+			expect(sort.middlewares).to.be.null;
 		});
 	});
 
@@ -50,7 +50,7 @@ describe('MiddlewareManager', function() {
 		let problem, options;
 
 		beforeEach(function() {
-			({ problem } = manager);
+			({ problem } = sort);
 			options = {
 				id,
 				middleware,
@@ -58,25 +58,25 @@ describe('MiddlewareManager', function() {
 				after: 'bar',
 				group: 'baz',
 			};
-			sinon.stub(MiddlewareManager, '_normalizeRegisterArgs')
+			sinon.stub(MiddlewareSort, '_normalizeRegisterArgs')
 				.returns(options);
 			sinon.stub(problem, 'add');
 		});
 
 		it('normalizes arguments', function() {
-			manager.register('wow', 'omg');
+			sort.register('wow', 'omg');
 
-			expect(MiddlewareManager._normalizeRegisterArgs).to.be.calledOnce;
-			expect(MiddlewareManager._normalizeRegisterArgs)
-				.to.be.calledOn(MiddlewareManager);
-			expect(MiddlewareManager._normalizeRegisterArgs).to.be
+			expect(MiddlewareSort._normalizeRegisterArgs).to.be.calledOnce;
+			expect(MiddlewareSort._normalizeRegisterArgs)
+				.to.be.calledOn(MiddlewareSort);
+			expect(MiddlewareSort._normalizeRegisterArgs).to.be
 				.calledWith([ 'wow', 'omg' ]);
 		});
 
 		it('adds id to the problem, with before, after, and group options', function() {
 			const { before, after, group } = options;
 
-			manager.register();
+			sort.register();
 
 			expect(problem.add).to.be.calledOnce;
 			expect(problem.add).to.be.calledOn(problem);
@@ -87,36 +87,36 @@ describe('MiddlewareManager', function() {
 			const { before, after, group } = options;
 			options.whatever = 'should be ignored';
 
-			manager.register();
+			sort.register();
 
 			expect(problem.add).to.be.calledWith(id, { before, after, group });
 		});
 
 		it('adds the middleware to middlewares by id', function() {
-			manager.register();
+			sort.register();
 
-			expect(manager._middlewaresById[id]).to.equal(middleware);
+			expect(sort._middlewaresById[id]).to.equal(middleware);
 		});
 
 		it('does not change middlewares by id if Problem#add throws', function() {
 			problem.add.throws(new Error('bad error wow'));
 
-			expect(() => manager.register()).to.throw();
-			expect(manager._middlewaresById).to.be.empty;
+			expect(() => sort.register()).to.throw();
+			expect(sort._middlewaresById).to.be.empty;
 		});
 
 		it('throws if ids is not null', function() {
-			manager.ids = [ 'yay', 'woo' ];
+			sort.ids = [ 'yay', 'woo' ];
 
 			expect(() => {
-				manager.register();
+				sort.register();
 			}).to.throw(FinalizedError).that.satisfies((err) => {
 				const defaultMessage = FinalizedError.getDefaultMessage();
 				expect(err.message).to.equal(defaultMessage);
 				return true;
 			});
 			expect(problem.add).to.not.be.called;
-			expect(manager._middlewaresById).to.be.empty;
+			expect(sort._middlewaresById).to.be.empty;
 		});
 	});
 
@@ -124,22 +124,22 @@ describe('MiddlewareManager', function() {
 		let problem, solution;
 
 		beforeEach(function() {
-			({ problem } = manager);
+			({ problem } = sort);
 			solution = [ 'foo', 'bar' ];
 			sinon.stub(problem, 'solve').returns(solution);
 		});
 
 		it('solves the problem', function() {
-			manager.finalize();
+			sort.finalize();
 
 			expect(problem.solve).to.be.calledOnce;
-			expect(problem.solve).to.be.calledOn(manager.problem);
+			expect(problem.solve).to.be.calledOn(sort.problem);
 		});
 
 		it('sets the ids property to the problem solution', function() {
-			manager.finalize();
+			sort.finalize();
 
-			expect(manager.ids).to.equal(solution);
+			expect(sort.ids).to.equal(solution);
 		});
 	});
 
@@ -154,22 +154,22 @@ describe('MiddlewareManager', function() {
 			unchanged = _.clone(options);
 			identified = { id, options, middleware };
 
-			sinon.stub(MiddlewareManager, '_identifyRegisterArgs')
+			sinon.stub(MiddlewareSort, '_identifyRegisterArgs')
 				.returns(identified);
 		});
 
 		it('identifies provided args array', function() {
-			MiddlewareManager._normalizeRegisterArgs(args);
+			MiddlewareSort._normalizeRegisterArgs(args);
 
-			expect(MiddlewareManager._identifyRegisterArgs).to.be.calledOnce;
-			expect(MiddlewareManager._identifyRegisterArgs)
-				.to.be.calledOn(MiddlewareManager);
-			expect(MiddlewareManager._identifyRegisterArgs)
+			expect(MiddlewareSort._identifyRegisterArgs).to.be.calledOnce;
+			expect(MiddlewareSort._identifyRegisterArgs)
+				.to.be.calledOn(MiddlewareSort);
+			expect(MiddlewareSort._identifyRegisterArgs)
 				.to.be.calledWith(args);
 		});
 
 		it('returns a copy of options with id and middleware added', function() {
-			const result = MiddlewareManager._normalizeRegisterArgs(args);
+			const result = MiddlewareSort._normalizeRegisterArgs(args);
 
 			expect(result).to.deep.equal({ foo: 'bar', id, middleware });
 			expect(options).to.deep.equal(unchanged);
@@ -179,7 +179,7 @@ describe('MiddlewareManager', function() {
 			options.id = 'options id';
 			options.middleware = () => {};
 
-			const result = MiddlewareManager._normalizeRegisterArgs(args);
+			const result = MiddlewareSort._normalizeRegisterArgs(args);
 
 			expect(result).to.deep.equal({
 				foo: 'bar',
@@ -195,7 +195,7 @@ describe('MiddlewareManager', function() {
 		const middleware = () => {};
 
 		it('returns categorized arguments as an object', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([
+			const result = MiddlewareSort._identifyRegisterArgs([
 				id,
 				options,
 				middleware,
@@ -205,7 +205,7 @@ describe('MiddlewareManager', function() {
 		});
 
 		it('supports omitted id', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([
+			const result = MiddlewareSort._identifyRegisterArgs([
 				options,
 				middleware,
 			]);
@@ -214,7 +214,7 @@ describe('MiddlewareManager', function() {
 		});
 
 		it('supports omitted options', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([
+			const result = MiddlewareSort._identifyRegisterArgs([
 				id,
 				middleware,
 			]);
@@ -223,7 +223,7 @@ describe('MiddlewareManager', function() {
 		});
 
 		it('supports omitted middleware', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([
+			const result = MiddlewareSort._identifyRegisterArgs([
 				id,
 				options,
 			]);
@@ -232,13 +232,13 @@ describe('MiddlewareManager', function() {
 		});
 
 		it('supports id only', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([ id ]);
+			const result = MiddlewareSort._identifyRegisterArgs([ id ]);
 
 			expect(result).to.deep.equal({ id, options: {}, middleware: null });
 		});
 
 		it('supports options only', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([ options ]);
+			const result = MiddlewareSort._identifyRegisterArgs([ options ]);
 
 			expect(result).to.deep.equal({
 				id: null,
@@ -248,7 +248,7 @@ describe('MiddlewareManager', function() {
 		});
 
 		it('supports middleware only', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([
+			const result = MiddlewareSort._identifyRegisterArgs([
 				middleware,
 			]);
 
@@ -256,7 +256,7 @@ describe('MiddlewareManager', function() {
 		});
 
 		it('supports empty arguments array', function() {
-			const result = MiddlewareManager._identifyRegisterArgs([]);
+			const result = MiddlewareSort._identifyRegisterArgs([]);
 
 			expect(result).to.deep.equal({
 				id: null,
