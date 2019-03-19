@@ -107,6 +107,10 @@ describe('Application', function() {
 	});
 
 	describe('#_handleRequest', function() {
-		// TODO
+		it('handles a request');
+	});
+
+	describe('#_', function() {
+
 	});
 });

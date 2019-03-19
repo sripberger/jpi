@@ -115,6 +115,8 @@ describe('MiddlewareManager', function() {
 				expect(err.message).to.equal(defaultMessage);
 				return true;
 			});
+			expect(problem.add).to.not.be.called;
+			expect(manager._middlewaresById).to.be.empty;
 		});
 	});
 
