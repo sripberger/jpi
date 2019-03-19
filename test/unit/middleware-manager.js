@@ -1,3 +1,4 @@
+import { FinalizedError } from '../../lib/finalized-error';
 import { MiddlewareManager } from '../../lib/middleware-manager';
 import { Problem } from 'topo-strict';
 import _ from 'lodash';
@@ -13,8 +14,34 @@ describe('MiddlewareManager', function() {
 		expect(manager.problem).to.be.an.instanceof(Problem);
 	});
 
+	it('creates a null property for storing the finalized id order', function() {
+		expect(manager.ids).to.be.null;
+	});
+
 	it('creates an object for storing middlewares by id', function() {
-		expect(manager.middlewaresById).to.deep.equal({});
+		expect(manager._middlewaresById).to.deep.equal({});
+	});
+
+	describe('@middlewares', function() {
+		it('returns ids mapped to middlewares', function() {
+			const fooMiddleware = () => {};
+			const barMiddleware = () => {};
+			manager.ids = [ 'foo', 'bar' ];
+			manager._middlewaresById = {
+				foo: fooMiddleware,
+				bar: barMiddleware,
+				baz: () => {},
+			};
+
+			expect(manager.middlewares).to.deep.equal([
+				fooMiddleware,
+				barMiddleware,
+			]);
+		});
+
+		it('returns null if ids is null', function() {
+			expect(manager.middlewares).to.be.null;
+		});
 	});
 
 	describe('#register', function() {
@@ -56,7 +83,7 @@ describe('MiddlewareManager', function() {
 			expect(problem.add).to.be.calledWith(id, { before, after, group });
 		});
 
-		it('omits any extra optiosn properties from add options', function() {
+		it('omits any extra options properties from add options', function() {
 			const { before, after, group } = options;
 			options.whatever = 'should be ignored';
 
@@ -68,40 +95,49 @@ describe('MiddlewareManager', function() {
 		it('adds the middleware to middlewares by id', function() {
 			manager.register();
 
-			expect(manager.middlewaresById[id]).to.equal(middleware);
+			expect(manager._middlewaresById[id]).to.equal(middleware);
 		});
 
 		it('does not change middlewares by id if Problem#add throws', function() {
 			problem.add.throws(new Error('bad error wow'));
 
 			expect(() => manager.register()).to.throw();
-			expect(manager.middlewaresById).to.be.empty;
+			expect(manager._middlewaresById).to.be.empty;
+		});
+
+		it('throws if ids is not null', function() {
+			manager.ids = [ 'yay', 'woo' ];
+
+			expect(() => {
+				manager.register();
+			}).to.throw(FinalizedError).that.satisfies((err) => {
+				const defaultMessage = FinalizedError.getDefaultMessage();
+				expect(err.message).to.equal(defaultMessage);
+				return true;
+			});
 		});
 	});
 
-	describe('#getMiddlewares', function() {
-		const fooMiddleware = () => {};
-		const barMiddleware = () => {};
-		let problem, result;
+	describe('#finalize', function() {
+		let problem, solution;
 
 		beforeEach(function() {
 			({ problem } = manager);
-			manager.middlewaresById = {
-				foo: fooMiddleware,
-				bar: barMiddleware,
-			};
-			sinon.stub(problem, 'solve').returns([ 'foo', 'bar' ]);
-
-			result = manager.getMiddlewares();
+			solution = [ 'foo', 'bar' ];
+			sinon.stub(problem, 'solve').returns(solution);
 		});
 
 		it('solves the problem', function() {
+			manager.finalize();
+
 			expect(problem.solve).to.be.calledOnce;
 			expect(problem.solve).to.be.calledOn(manager.problem);
 		});
 
-		it('returns solve result mapped to middlewares', function() {
-			expect(result).to.deep.equal([ fooMiddleware, barMiddleware ]);
+		it('sets the ids property to the problem solution', function() {
+			manager.finalize();
+
+			expect(manager.ids).to.equal(solution);
 		});
 	});
 
