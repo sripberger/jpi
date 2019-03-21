@@ -20,6 +20,14 @@ describe('RequestBatch', function() {
 		expect(new RequestBatch().requests).to.deep.equal([]);
 	});
 
+	it('stores whether the batch came from a single request object', function() {
+		expect(new RequestBatch([], true).isSingle).to.be.true;
+	});
+
+	it('defaults to false for isSingle', function() {
+		expect(new RequestBatch([]).isSingle).to.be.false;
+	});
+
 	describe('::fromHttp', function() {
 		const req = {};
 
@@ -68,6 +76,7 @@ describe('RequestBatch', function() {
 			expect(result.requests).to.have.length(2);
 			expect(result.requests[0]).to.equal(fooRequest);
 			expect(result.requests[1]).to.equal(barRequest);
+			expect(result.isSingle).to.be.false;
 		});
 
 		it('maps a single request with no array', async function() {
@@ -84,6 +93,7 @@ describe('RequestBatch', function() {
 			expect(result).to.be.an.instanceof(RequestBatch);
 			expect(result.requests).to.have.length(1);
 			expect(result.requests[0]).to.equal(request);
+			expect(result.isSingle).to.be.true;
 		});
 	});
 
