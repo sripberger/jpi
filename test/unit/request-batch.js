@@ -1,6 +1,12 @@
 import * as requestModule from '../../lib/request';
 import * as zstreams from 'zstreams';
-import { ParseError, RequestFailedError } from 'jpi-errors';
+
+import {
+	InvalidRequestError,
+	ParseError,
+	RequestFailedError,
+} from 'jpi-errors';
+
 import { HttpStatusError } from '../../lib/http-status-error';
 import { RequestBatch } from '../../lib/request-batch';
 
@@ -33,7 +39,7 @@ describe('RequestBatch', function() {
 
 		beforeEach(function() {
 			sinon.stub(RequestBatch, '_validateHttp');
-			sinon.stub(RequestBatch, '_parseBody').returns([]);
+			sinon.stub(RequestBatch, '_parseBody').returns([ {} ]);
 		});
 
 		it('validates the provided http request', async function() {
@@ -94,6 +100,17 @@ describe('RequestBatch', function() {
 			expect(result.requests).to.have.length(1);
 			expect(result.requests[0]).to.equal(request);
 			expect(result.isSingle).to.be.true;
+		});
+
+		it('rejects if there are no requests', function() {
+			RequestBatch._parseBody.resolves([]);
+
+			return RequestBatch.fromHttp(req)
+				.then(() => {
+					throw new Error('Promise should have rejected');
+				}, (err) => {
+					expect(err).to.be.an.instanceof(InvalidRequestError);
+				});
 		});
 	});
 
