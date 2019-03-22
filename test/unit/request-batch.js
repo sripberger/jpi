@@ -1,4 +1,5 @@
 import * as requestModule from '../../lib/request';
+import { InvalidRequestError } from 'jpi-errors';
 import { RequestBatch } from '../../lib/request-batch';
 
 describe('RequestBatch', function() {
@@ -24,8 +25,8 @@ describe('RequestBatch', function() {
 			const fooRequest = { request: 'foo' };
 			const barRequest = { request: 'bar' };
 			const Request = sinon.stub(requestModule, 'Request');
-			Request.withArgs(sinon.match.same(fooObj)).returns(fooRequest);
-			Request.withArgs(sinon.match.same(barObj)).returns(barRequest);
+			Request.withArgs(fooObj).returns(fooRequest);
+			Request.withArgs(barObj).returns(barRequest);
 
 			const result = RequestBatch.fromArray([ fooObj, barObj ]);
 
@@ -37,6 +38,12 @@ describe('RequestBatch', function() {
 			expect(result.requests).to.have.length(2);
 			expect(result.requests[0]).to.equal(fooRequest);
 			expect(result.requests[1]).to.equal(barRequest);
+		});
+
+		it('throws if array is empty', function() {
+			expect(() => {
+				RequestBatch.fromArray([]);
+			}).to.throw(InvalidRequestError);
 		});
 	});
 });
