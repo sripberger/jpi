@@ -1,4 +1,3 @@
-import * as requestHandlerModule from '../../lib/request-handler';
 import { Application } from '../../lib/application';
 import { MethodManager } from '../../lib/method-manager';
 import { MiddlewareManager } from '../../lib/middleware-manager';
@@ -60,12 +59,15 @@ describe('Application', function() {
 	});
 
 	describe('#getCallback', function() {
-		let callback;
+		const bound = () => {};
+		let _handle, result;
 
 		beforeEach(function() {
+			({ _handle } = application);
 			sinon.stub(_middlewareManager, 'finalize');
+			sinon.stub(_handle, 'bind').returns(bound);
 
-			callback = application.getCallback();
+			result = application.getCallback();
 		});
 
 		it('finalizes application-level middleware', function() {
@@ -74,40 +76,18 @@ describe('Application', function() {
 				.to.be.calledOn(_middlewareManager);
 		});
 
-		it('returns a function', function() {
-			expect(callback).to.be.an.instanceof(Function);
+		it('binds #_handle method to instance', function() {
+			expect(_handle.bind).to.be.calledOnce;
+			expect(_handle.bind).to.be.calledOn(_handle);
+			expect(_handle.bind).to.be.calledWithExactly();
 		});
 
-		describe('returned function', function() {
-			let request, response, handler;
-
-			beforeEach(function() {
-				request = {};
-				response = {};
-				handler = sinon.createStubInstance(
-					requestHandlerModule.RequestHandler
-				);
-				sinon.stub(requestHandlerModule, 'RequestHandler')
-					.returns(handler);
-
-				callback(request, response);
-			});
-
-			it('creates a request handler with required arguments', function() {
-				expect(requestHandlerModule.RequestHandler).to.be.calledOnce;
-				expect(requestHandlerModule.RequestHandler).to.be.calledWithNew;
-				expect(requestHandlerModule.RequestHandler).to.be.calledWith(
-					sinon.match.same(request),
-					sinon.match.same(response),
-					sinon.match.same(application._middlewareManager),
-					sinon.match.same(application._methodManager)
-				);
-			});
-
-			it('runs the request handler', function() {
-				expect(handler.run).to.be.calledOnce;
-				expect(handler.run).to.be.calledOn(handler);
-			});
+		it('returns bound #_handle method', function() {
+			expect(result).to.equal(bound);
 		});
+	});
+
+	describe('#_handle', function() {
+		it('handles the http request and response');
 	});
 });
