@@ -38,32 +38,32 @@ describe('RequestHandler', function() {
 		expect(handler.httpRequest).to.equal(httpRequest);
 	});
 
-	describe('#run', function() {
+	describe('#getResponse', function() {
 		const response = { success: 'response' };
 
 		beforeEach(function() {
-			sinon.stub(handler, '_runUnsafe').resolves(response);
+			sinon.stub(handler, '_run').resolves(response);
 		});
 
 		it('runs the handler', async function() {
-			await handler.run();
+			await handler.getResponse();
 
-			expect(handler._runUnsafe).to.be.calledOnce;
-			expect(handler._runUnsafe).to.be.calledOn(handler);
+			expect(handler._run).to.be.calledOnce;
+			expect(handler._run).to.be.calledOn(handler);
 		});
 
 		it('resolves with the handler result', async function() {
-			expect(await handler.run()).to.equal(response);
+			expect(await handler.getResponse()).to.equal(response);
 		});
 
 		it('resolves with error response if the run fails', async function() {
 			const errResponse = { error: 'response' };
 			const err = new Error('omg bad error!');
 			request.id = 'request id';
-			handler._runUnsafe.rejects(err);
+			handler._run.rejects(err);
 			sinon.stub(responseUtils, 'getErrorResponse').returns(errResponse);
 
-			const result = await handler.run();
+			const result = await handler.getResponse();
 
 			expect(responseUtils.getErrorResponse).to.be.calledOnce;
 			expect(responseUtils.getErrorResponse).to.be.calledWith(
@@ -74,7 +74,7 @@ describe('RequestHandler', function() {
 		});
 	});
 
-	describe('#_runUnsafe', function() {
+	describe('#_run', function() {
 		const context = { result: { foo: 'bar' } };
 		const response = { success: 'response' };
 		let contextManager, result;
@@ -87,7 +87,7 @@ describe('RequestHandler', function() {
 			contextManager.run.resolves(context);
 			sinon.stub(responseUtils, 'getSuccessResponse').returns(response);
 
-			result = await handler._runUnsafe();
+			result = await handler._run();
 		});
 
 		it('validates the request', function() {
