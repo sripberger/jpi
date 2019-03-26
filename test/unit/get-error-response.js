@@ -26,12 +26,8 @@ describe('getErrorResponse', function() {
 		expect(toObject).to.be.calledWith(wrapped);
 	});
 
-	it('returns an object with id, null result, and converted error', function() {
-		expect(result).to.deep.equal({
-			id,
-			result: null,
-			error: converted,
-		});
+	it('returns JSON-RPC response object with id and converted error', function() {
+		expect(result).to.deep.equal({ jsonrpc: '2.0', id, error: converted });
 	});
 
 	it('defaults to a null id', function() {
