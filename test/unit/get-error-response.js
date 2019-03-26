@@ -1,8 +1,9 @@
 import * as jpiErrors from 'jpi-errors';
 import * as wrapErrorModule from '../../lib/wrap-error';
-import { convertError } from '../../lib/convert-error';
+import { getErrorResponse } from '../../lib/get-error-response';
 
-describe('convertError', function() {
+describe('getErrorResponse', function() {
+	const id = 'some id';
 	const err = new Error('original error');
 	const wrapped = new Error('wrapped error');
 	const converted = { converted: 'error' };
@@ -12,7 +13,7 @@ describe('convertError', function() {
 		wrapError = sinon.stub(wrapErrorModule, 'wrapError').returns(wrapped);
 		toObject = sinon.stub(jpiErrors, 'toObject').returns(converted);
 
-		result = convertError(err);
+		result = getErrorResponse(err, id);
 	});
 
 	it('wraps error', function() {
@@ -20,12 +21,24 @@ describe('convertError', function() {
 		expect(wrapError).to.be.calledWith(err);
 	});
 
-	it('converts wrapped error using jpi-errors::toObject', function() {
+	it('converts wrapped error to a JSON-RPC error object', function() {
 		expect(toObject).to.be.calledOnce;
 		expect(toObject).to.be.calledWith(wrapped);
 	});
 
-	it('returns result of jpi-errors::toObject', function() {
-		expect(result).to.equal(converted);
+	it('returns an object with id, null result, and converted error', function() {
+		expect(result).to.deep.equal({
+			id,
+			result: null,
+			error: converted,
+		});
+	});
+
+	it('defaults to a null id', function() {
+		expect(getErrorResponse(err).id).to.be.null;
+	});
+
+	it('supports falsy ids', function() {
+		expect(getErrorResponse(err, 0).id).to.equal(0);
 	});
 });
