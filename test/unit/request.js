@@ -1,6 +1,7 @@
 import * as nani from 'nani';
 import { InvalidRequestError } from 'jpi-errors';
 import { Request } from '../../lib/request';
+import { RequestHandler } from '../../lib/request-handler';
 import { ValidationError } from '../../lib/validation-error';
 
 describe('Request', function() {
@@ -68,6 +69,46 @@ describe('Request', function() {
 				expect(err.cause).to.equal(errFromArray);
 				return true;
 			});
+		});
+	});
+
+	describe('#getResponse', function() {
+		const middlewareManager = { middleware: 'manager' };
+		const methodManager = { method: 'manager' };
+		const httpRequest = { http: 'request' };
+		const response = { foo: 'bar' };
+		let request, handler, result;
+
+		beforeEach(async function() {
+			request = new Request();
+			handler = sinon.createStubInstance(RequestHandler);
+			sinon.stub(request, '_getHandler').returns(handler);
+			handler.getResponse.resolves(response);
+
+			result = await request.getResponse(
+				middlewareManager,
+				methodManager,
+				httpRequest
+			);
+		});
+
+		it('gets a handler for the request', function() {
+			expect(request._getHandler).to.be.calledOnce;
+			expect(request._getHandler).to.be.calledOn(request);
+			expect(request._getHandler).to.be.calledWith(
+				middlewareManager,
+				methodManager,
+				httpRequest
+			);
+		});
+
+		it('gets the response from the handler', function() {
+			expect(handler.getResponse).to.be.calledOnce;
+			expect(handler.getResponse).to.be.calledOn(handler);
+		});
+
+		it('resolves with the response', function() {
+			expect(result).to.equal(response);
 		});
 	});
 
@@ -280,6 +321,27 @@ describe('Request', function() {
 				'id must be a string, number, or null, recieved undefined'
 			);
 			expect(result.info).to.deep.equal({ id: undefined });
+		});
+	});
+
+	describe('#_getHandler', function() {
+		it('returns a RequestHandler populated with arguments', function() {
+			const request = new Request();
+			const middlewareManager = { middleware: 'manager' };
+			const methodManager = { method: 'manager' };
+			const httpRequest = { http: 'request' };
+
+			const result = request._getHandler(
+				middlewareManager,
+				methodManager,
+				httpRequest
+			);
+
+			expect(result).to.be.an.instanceof(RequestHandler);
+			expect(result.request).to.equal(request);
+			expect(result.middlewareManager).to.equal(middlewareManager);
+			expect(result.methodManager).to.equal(methodManager);
+			expect(result.httpRequest).to.equal(httpRequest);
 		});
 	});
 });
