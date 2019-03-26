@@ -1,28 +1,101 @@
 import { ContextManager } from '../../lib/context-manager';
+import _ from 'lodash';
 
 describe('ContextManager', function() {
+	let context, middlewares, manager;
+
+	beforeEach(function() {
+		context = {};
+		middlewares = {};
+		manager = new ContextManager(context, middlewares);
+	});
+
 	it('stores the provided context object', function() {
-		const ctx = { foo: 'bar' };
-
-		const manager = new ContextManager(ctx);
-
-		expect(manager.context).to.equal(ctx);
+		expect(manager.context).to.equal(context);
 	});
 
-	it('defaults to an empty context object', function() {
-		const manager = new ContextManager();
-
-		expect(manager.context).to.deep.equal({});
+	it('stores the provided middlewares object', function() {
+		expect(manager.middlewares).to.equal(middlewares);
 	});
 
-	describe('::runMiddlewares', function() {
+	describe('#run', function() {
+		it('runs all middlewares in the proper order', async function() {
+			const names = [];
+			const _runMiddlewaresWithName = sinon.stub(
+				manager,
+				'_runMiddlewaresWithName'
+			).callsFake((name) => {
+				let expectedNames;
+				switch (name) {
+					case 'premethod':
+						expectedNames = [];
+						break;
+					case 'method':
+						expectedNames = [ 'premethod' ];
+						break;
+					case 'postmethod':
+						expectedNames = [ 'premethod', 'method' ];
+						break;
+					default:
+						return;
+				}
+				return new Promise((resolve, reject) => {
+					if (_.isEqual(names, expectedNames)) {
+						setImmediate(() => {
+							names.push(name);
+							resolve();
+						});
+					} else {
+						reject(new Error('Middlewares run out of sequence'));
+					}
+				});
+			});
+
+			await manager.run();
+
+			expect(_runMiddlewaresWithName).to.be.calledThrice;
+			expect(names).to.deep.equal([
+				'premethod',
+				'method',
+				'postmethod',
+			]);
+		});
+	});
+
+	describe('#_runMiddlewaresWithName', function() {
+		beforeEach(function() {
+			middlewares.foo = [ () => {}, () => {} ];
+			sinon.stub(manager, '_runMiddlewares').resolves();
+		});
+
+		it('runs the middlewares with the provided name', async function() {
+			await manager._runMiddlewaresWithName('foo');
+
+			expect(manager._runMiddlewares).to.be.calledOnce;
+			expect(manager._runMiddlewares).to.be.calledOn(manager);
+			expect(manager._runMiddlewares).to.be.calledWith(middlewares.foo);
+		});
+
+		it('rejects if middlewares reject', function() {
+			const middlwareError = new Error('Middlware error');
+			manager._runMiddlewares.rejects(middlwareError);
+
+			return manager._runMiddlewaresWithName('foo')
+				.then(() => {
+					throw new Error('Promise should have rejected');
+				}, (err) => {
+					expect(err).to.equal(middlwareError);
+				});
+		});
+	});
+
+	describe('#_runMiddlewares', function() {
 		const mw1 = () => {};
 		const mw2 = () => {};
-		const middlewares = [ mw1, mw2 ];
-		let manager, _runSingleMiddleware;
+		const mws = [ mw1, mw2 ];
+		let _runSingleMiddleware;
 
 		beforeEach(function() {
-			manager = new ContextManager();
 			_runSingleMiddleware = sinon.stub(manager, '_runSingleMiddleware');
 		});
 
@@ -48,7 +121,7 @@ describe('ContextManager', function() {
 					});
 				});
 
-			await manager.runMiddlewares(middlewares);
+			await manager._runMiddlewares(mws);
 
 			expect(_runSingleMiddleware).to.be.calledTwice;
 			expect(_runSingleMiddleware).to.always.be.calledOn(manager);
@@ -62,7 +135,7 @@ describe('ContextManager', function() {
 			manager.context.error = new Error('wow an error');
 			_runSingleMiddleware.resolves();
 
-			await manager.runMiddlewares(middlewares);
+			await manager._runMiddlewares(mws);
 
 			expect(_runSingleMiddleware).to.not.be.called;
 		});
@@ -75,7 +148,7 @@ describe('ContextManager', function() {
 				})
 				.onSecondCall().resolves();
 
-			await manager.runMiddlewares(middlewares);
+			await manager._runMiddlewares(mws);
 
 			expect(_runSingleMiddleware).to.be.calledOnce;
 			expect(_runSingleMiddleware).to.be.calledOn(manager);
@@ -84,11 +157,10 @@ describe('ContextManager', function() {
 	});
 
 	describe('#_runSingleMiddleware', function() {
-		let manager, middleware;
+		let middleware;
 
 		beforeEach(function() {
-			manager = new ContextManager();
-			middleware = sinon.stub();
+			middleware = sinon.stub().named('middleware');
 		});
 
 		it('invokes middleware with context object', async function() {
