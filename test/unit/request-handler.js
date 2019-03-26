@@ -1,3 +1,4 @@
+import * as responseUtils from '../../lib/response-utils';
 import { ContextManager } from '../../lib/context-manager';
 import { MethodManager } from '../../lib/method-manager';
 import { MiddlewareManager } from '../../lib/middleware-manager';
@@ -38,14 +39,17 @@ describe('RequestHandler', function() {
 	});
 
 	describe('#run', function() {
-		const runResult = { run: 'result' };
+		const context = { result: { foo: 'bar' } };
+		const response = { success: 'response' };
 		let contextManager, result;
 
 		beforeEach(async function() {
 			contextManager = sinon.createStubInstance(ContextManager);
-			contextManager.run.resolves(runResult);
+			request.id = 'request id';
 			sinon.stub(request, 'validate');
 			sinon.stub(handler, '_getContextManager').returns(contextManager);
+			contextManager.run.resolves(context);
+			sinon.stub(responseUtils, 'getSuccessResponse').returns(response);
 
 			result = await handler.run();
 		});
@@ -66,8 +70,16 @@ describe('RequestHandler', function() {
 			expect(contextManager.run).to.be.calledOn(contextManager);
 		});
 
-		it('resolves with result of context manager run', function() {
-			expect(result).to.equal(runResult);
+		it('gets success response using result from context manager run', function() {
+			expect(responseUtils.getSuccessResponse).to.be.calledOnce;
+			expect(responseUtils.getSuccessResponse).to.be.calledWith(
+				context.result,
+				request.id
+			);
+		});
+
+		it('resolves success response', function() {
+			expect(result).to.equal(response);
 		});
 	});
 
