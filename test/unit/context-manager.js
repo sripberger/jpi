@@ -19,9 +19,11 @@ describe('ContextManager', function() {
 	});
 
 	describe('#run', function() {
-		it('runs all middlewares in the proper order', async function() {
-			const names = [];
-			const _runMiddlewaresWithName = sinon.stub(
+		let finishedNames, _runMiddlewaresWithName;
+
+		beforeEach(function() {
+			finishedNames = [];
+			_runMiddlewaresWithName = sinon.stub(
 				manager,
 				'_runMiddlewaresWithName'
 			).callsFake((name) => {
@@ -40,25 +42,35 @@ describe('ContextManager', function() {
 						return;
 				}
 				return new Promise((resolve, reject) => {
-					if (_.isEqual(names, expectedNames)) {
+					if (_.isEqual(finishedNames, expectedNames)) {
 						setImmediate(() => {
-							names.push(name);
+							finishedNames.push(name);
 							resolve();
 						});
 					} else {
-						reject(new Error('Middlewares run out of sequence'));
+						reject(new Error('Middlewares run out of order'));
 					}
 				});
 			});
+		});
 
+		it('runs all middlewares in the proper order', async function() {
 			await manager.run();
 
 			expect(_runMiddlewaresWithName).to.be.calledThrice;
-			expect(names).to.deep.equal([
+			expect(_runMiddlewaresWithName).to.always.be.calledOn(manager);
+			expect(_runMiddlewaresWithName).to.be.calledWith('premethod');
+			expect(_runMiddlewaresWithName).to.be.calledWith('method');
+			expect(_runMiddlewaresWithName).to.be.calledWith('postmethod');
+			expect(finishedNames).to.deep.equal([
 				'premethod',
 				'method',
 				'postmethod',
 			]);
+		});
+
+		it('resolves with the context object', async function() {
+			expect(await manager.run()).to.equal(context);
 		});
 	});
 
