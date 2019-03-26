@@ -102,16 +102,15 @@ describe('ContextManager', function() {
 	});
 
 	describe('#_runMiddlewares', function() {
-		const mw1 = () => {};
-		const mw2 = () => {};
-		const mws = [ mw1, mw2 ];
-		let _runSingleMiddleware;
-
-		beforeEach(function() {
-			_runSingleMiddleware = sinon.stub(manager, '_runSingleMiddleware');
-		});
-
 		it('runs provided middlewares in series', async function() {
+			const mw1 = () => {};
+			const mw2 = () => {};
+			const mws = [ mw1, mw2 ];
+			const _runSingleMiddleware = sinon.stub(
+				manager,
+				'_runSingleMiddleware'
+			);
+
 			_runSingleMiddleware
 				.onFirstCall().callsFake(function() {
 					return new Promise((resolve) => {
@@ -141,30 +140,6 @@ describe('ContextManager', function() {
 			expect(_runSingleMiddleware.secondCall).to.be.calledWith(mw2);
 			expect(mw1.done).to.be.true;
 			expect(mw2.done).to.be.true;
-		});
-
-		it('does nothing if error is already set', async function() {
-			manager.context.error = new Error('wow an error');
-			_runSingleMiddleware.resolves();
-
-			await manager._runMiddlewares(mws);
-
-			expect(_runSingleMiddleware).to.not.be.called;
-		});
-
-		it('stops if error is set by a middleware', async function() {
-			_runSingleMiddleware
-				.onFirstCall().callsFake(function() {
-					manager.context.error = new Error('Omg bad error!');
-					return Promise.resolve();
-				})
-				.onSecondCall().resolves();
-
-			await manager._runMiddlewares(mws);
-
-			expect(_runSingleMiddleware).to.be.calledOnce;
-			expect(_runSingleMiddleware).to.be.calledOn(manager);
-			expect(_runSingleMiddleware).to.be.calledWith(mw1);
 		});
 	});
 
@@ -207,15 +182,6 @@ describe('ContextManager', function() {
 			expect(manager.context).to.not.have.property('result');
 		});
 
-		it('assigns error onto context if middleware throws', async function() {
-			const error = new Error('Bad error omg');
-			middleware.throws(error);
-
-			await manager._runSingleMiddleware(middleware);
-
-			expect(manager.context.error).to.equal(error);
-		});
-
 		it('handles successful asynchronous middleware with result', async function() {
 			const result = { foo: 'bar' };
 			middleware.resolves(result);
@@ -231,27 +197,6 @@ describe('ContextManager', function() {
 			await manager._runSingleMiddleware(middleware);
 
 			expect(manager.context).to.not.have.property('result');
-		});
-
-		it('handles failed asynchronous middleware', async function() {
-			const error = new Error('Bad error omg');
-			middleware.rejects(error);
-
-			await manager._runSingleMiddleware(middleware);
-
-			expect(manager.context.error).to.equal(error);
-		});
-
-		it('assigns default error if middleware rejects with nothing', async function() {
-			// eslint-disable-next-line prefer-promise-reject-errors
-			middleware.returns(Promise.reject());
-
-			await manager._runSingleMiddleware(middleware);
-
-			expect(manager.context.error).to.be.an.instanceof(Error);
-			expect(manager.context.error.message).to.equal(
-				'Unknown error in request middleware.'
-			);
 		});
 	});
 });
