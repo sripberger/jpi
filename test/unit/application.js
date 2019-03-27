@@ -1,5 +1,5 @@
+import { AppRegistry } from '../../lib/app-registry';
 import { Application } from '../../lib/application';
-import { Registry } from '../../lib/registry';
 
 describe('Application', function() {
 	let application, _registry;
@@ -9,8 +9,8 @@ describe('Application', function() {
 		({ _registry } = application);
 	});
 
-	it('creates and stores a registry', function() {
-		expect(_registry).to.be.an.instanceof(Registry);
+	it('creates and stores an app registry', function() {
+		expect(_registry).to.be.an.instanceof(AppRegistry);
 	});
 
 	describe('#registerPremethod', function() {

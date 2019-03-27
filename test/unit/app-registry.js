@@ -1,12 +1,12 @@
+import { AppRegistry } from '../../lib/app-registry';
 import { MethodRegistry } from '../../lib/method-registry';
-import { Registry } from '../../lib/registry';
 import { TopoRegistry } from '../../lib/topo-registry';
 
-describe('Registry', function() {
+describe('AppRegistry', function() {
 	let manager, _premethod, _postmethod, _methods;
 
 	beforeEach(function() {
-		manager = new Registry();
+		manager = new AppRegistry();
 		({ _premethod, _postmethod, _methods } = manager);
 	});
 

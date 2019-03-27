@@ -1,6 +1,6 @@
 import * as responseUtils from '../../lib/response-utils';
+import { AppRegistry } from '../../lib/app-registry';
 import { ContextManager } from '../../lib/context-manager';
-import { Registry } from '../../lib/registry';
 import { Request } from '../../lib/request';
 import { RequestHandler } from '../../lib/request-handler';
 
@@ -9,7 +9,7 @@ describe('RequestHandler', function() {
 
 	beforeEach(function() {
 		request = new Request();
-		registry = new Registry();
+		registry = new AppRegistry();
 		httpRequest = {};
 
 		handler = new RequestHandler(request, registry, httpRequest);
