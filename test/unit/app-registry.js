@@ -3,11 +3,11 @@ import { MethodRegistry } from '../../lib/method-registry';
 import { TopoRegistry } from '../../lib/topo-registry';
 
 describe('AppRegistry', function() {
-	let manager, _premethod, _postmethod, _methods;
+	let registry, _premethod, _postmethod, _methods;
 
 	beforeEach(function() {
-		manager = new AppRegistry();
-		({ _premethod, _postmethod, _methods } = manager);
+		registry = new AppRegistry();
+		({ _premethod, _postmethod, _methods } = registry);
 	});
 
 	it('creates a registry for pre-method middlewares', function() {
@@ -22,43 +22,11 @@ describe('AppRegistry', function() {
 		expect(_methods).to.be.an.instanceof(MethodRegistry);
 	});
 
-	describe('@premethod', function() {
-		it('returns middlewares from _premethod', function() {
-			const middlewares = [ () => {}, () => {} ];
-			sinon.stub(_premethod, 'middlewares').get(() => middlewares);
-
-			expect(manager.premethod).to.equal(middlewares);
-		});
-	});
-
-	describe('@postmethod', function() {
-		it('returns middlewares from _postmethod', function() {
-			const middlewares = [ () => {}, () => {} ];
-			sinon.stub(_postmethod, 'middlewares').get(() => middlewares);
-
-			expect(manager.postmethod).to.equal(middlewares);
-		});
-	});
-
-	describe('#getMethod', function() {
-		it('passes through to method registry', function() {
-			const methodInfo = { method: 'info' };
-			sinon.stub(_methods, 'getMethod').returns(methodInfo);
-
-			const result = manager.getMethod('foo', 'bar');
-
-			expect(_methods.getMethod).to.be.calledOnce;
-			expect(_methods.getMethod).to.be.calledOn(_methods);
-			expect(_methods.getMethod).to.be.calledWith('foo', 'bar');
-			expect(result).to.equal(methodInfo);
-		});
-	});
-
 	describe('#registerPremethod', function() {
 		it('passes through to _premethod#register', function() {
 			sinon.stub(_premethod, 'register');
 
-			manager.registerPremethod('foo', 'bar');
+			registry.registerPremethod('foo', 'bar');
 
 			expect(_premethod.register).to.be.calledOnce;
 			expect(_premethod.register).to.be.calledOn(_premethod);
@@ -70,7 +38,7 @@ describe('AppRegistry', function() {
 		it('passes through to _postMethod#register', function() {
 			sinon.stub(_postmethod, 'register');
 
-			manager.registerPostmethod('foo', 'bar');
+			registry.registerPostmethod('foo', 'bar');
 
 			expect(_postmethod.register).to.be.calledOnce;
 			expect(_postmethod.register).to.be.calledOn(_postmethod);
@@ -82,7 +50,7 @@ describe('AppRegistry', function() {
 		it('passes through to _methods#register', function() {
 			sinon.stub(_methods, 'register');
 
-			manager.registerMethod('foo', 'bar');
+			registry.registerMethod('foo', 'bar');
 
 			expect(_methods.register).to.be.calledOnce;
 			expect(_methods.register).to.be.calledOn(_methods);
@@ -95,12 +63,44 @@ describe('AppRegistry', function() {
 			sinon.stub(_premethod, 'finalize');
 			sinon.stub(_postmethod, 'finalize');
 
-			manager.finalize();
+			registry.finalize();
 
 			expect(_premethod.finalize).to.be.calledOnce;
 			expect(_premethod.finalize).to.be.calledOn(_premethod);
 			expect(_postmethod.finalize).to.be.calledOnce;
 			expect(_postmethod.finalize).to.be.calledOn(_postmethod);
+		});
+	});
+
+	describe('#getMethod', function() {
+		it('returns options and middlewares for the provided method', function() {
+			const premethodMiddlewares = [ () => {}, () => {} ];
+			const postmethodMiddlewares = [ () => {}, () => {} ];
+			const method = 'some method';
+			const options = { foo: 'bar' };
+			const methodMiddlewares = [ () => {}, () => {} ];
+			sinon.stub(_premethod, 'middlewares')
+				.get(() => premethodMiddlewares);
+			sinon.stub(_postmethod, 'middlewares')
+				.get(() => postmethodMiddlewares);
+			sinon.stub(_methods, 'getMethod').returns({
+				options,
+				middlewares: methodMiddlewares,
+			});
+
+			const result = registry.getMethod(method);
+
+			expect(_methods.getMethod).to.be.calledOnce;
+			expect(_methods.getMethod).to.be.calledOn(_methods);
+			expect(_methods.getMethod).to.be.calledWith(method);
+			expect(result).to.deep.equal({
+				options,
+				middlewares: {
+					premethod: premethodMiddlewares,
+					postmethod: postmethodMiddlewares,
+					method: methodMiddlewares,
+				},
+			});
 		});
 	});
 });

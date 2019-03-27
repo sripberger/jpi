@@ -113,10 +113,8 @@ describe('RequestHandler', function() {
 		const params = { some: 'params' };
 		const headers = { some: 'headers' };
 		const rawHeaders = { some: 'raw headers' };
-		const methodOptions = { method: 'options' };
-		const premethodMiddlewares = [ () => {}, () => {} ];
-		const methodMiddlewares = [ () => {}, () => {} ];
-		const postmethodMiddlewares = [ () => {}, () => {} ];
+		const options = { method: 'options' };
+		const middlewares = { method: 'middlewares' };
 		let result;
 
 		beforeEach(function() {
@@ -124,20 +122,14 @@ describe('RequestHandler', function() {
 			request.params = params;
 			httpRequest.headers = headers;
 			httpRequest.rawHeaders = rawHeaders;
-			sinon.stub(registry, 'premethod').get(() => premethodMiddlewares);
-			sinon.stub(registry, 'postmethod').get(() => postmethodMiddlewares);
-			sinon.stub(registry, 'getMethod').returns({
-				middlewares: methodMiddlewares,
-				options: methodOptions,
-			});
+			sinon.stub(registry, 'getMethod').returns({ options, middlewares });
 
 			result = handler._getContextManager();
 		});
 
-		it('gets method entry for request.method', function() {
+		it('gets registry entry for request.method', function() {
 			expect(registry.getMethod).to.be.calledOnce;
-			expect(registry.getMethod)
-				.to.be.calledOn(registry);
+			expect(registry.getMethod).to.be.calledOn(registry);
 			expect(registry.getMethod).to.be.calledWith(method);
 		});
 
@@ -145,16 +137,12 @@ describe('RequestHandler', function() {
 			expect(result).to.be.an.instanceof(ContextManager);
 			expect(result.context).to.deep.equal({
 				method,
-				methodOptions,
+				options,
 				params,
 				headers,
 				rawHeaders,
 			});
-			expect(result.middlewares).to.deep.equal({
-				premethod: premethodMiddlewares,
-				method: methodMiddlewares,
-				postmethod: postmethodMiddlewares,
-			});
+			expect(result.middlewares).to.equal(middlewares);
 		});
 	});
 });
