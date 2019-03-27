@@ -1,5 +1,5 @@
 import { MiddlewareManager } from '../../lib/middleware-manager';
-import { MiddlewareSort } from '../../lib/middleware-sort';
+import { TopoRegistry } from '../../lib/topo-registry';
 
 describe('MiddlewareManager', function() {
 	let manager, _premethod, _postmethod;
@@ -10,11 +10,11 @@ describe('MiddlewareManager', function() {
 	});
 
 	it('creates a sort for pre-method middlewares', function() {
-		expect(_premethod).to.be.an.instanceof(MiddlewareSort);
+		expect(_premethod).to.be.an.instanceof(TopoRegistry);
 	});
 
 	it('creates a sort for post-method middlewares', function() {
-		expect(_postmethod).to.be.an.instanceof(MiddlewareSort);
+		expect(_postmethod).to.be.an.instanceof(TopoRegistry);
 	});
 
 	describe('@premethod', function() {
