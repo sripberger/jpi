@@ -1,13 +1,13 @@
 import { Application } from '../../lib/application';
-import { MethodManager } from '../../lib/method-manager';
+import { MethodRegistry } from '../../lib/method-registry';
 import { MiddlewareManager } from '../../lib/middleware-manager';
 
 describe('Application', function() {
-	let application, _middlewareManager, _methodManager;
+	let application, _middlewareManager, _methodRegistry;
 
 	beforeEach(function() {
 		application = new Application();
-		({ _middlewareManager, _methodManager } = application);
+		({ _middlewareManager, _methodRegistry } = application);
 	});
 
 	it('creates manager for application-level middleware', function() {
@@ -15,7 +15,7 @@ describe('Application', function() {
 	});
 
 	it('creates a manager for methods', function() {
-		expect(_methodManager).to.be.an.instanceof(MethodManager);
+		expect(_methodRegistry).to.be.an.instanceof(MethodRegistry);
 	});
 
 	describe('#registerPremethod', function() {
@@ -47,14 +47,14 @@ describe('Application', function() {
 	});
 
 	describe('registerMethod', function() {
-		it('passes through to _methodManager.register', function() {
-			sinon.stub(_methodManager, 'register');
+		it('passes through to _methodRegistry.register', function() {
+			sinon.stub(_methodRegistry, 'register');
 
 			application.registerMethod('foo', 'bar');
 
-			expect(_methodManager.register).to.be.calledOnce;
-			expect(_methodManager.register).to.be.calledOn(_methodManager);
-			expect(_methodManager.register).to.be.calledWith('foo', 'bar');
+			expect(_methodRegistry.register).to.be.calledOnce;
+			expect(_methodRegistry.register).to.be.calledOn(_methodRegistry);
+			expect(_methodRegistry.register).to.be.calledWith('foo', 'bar');
 		});
 	});
 

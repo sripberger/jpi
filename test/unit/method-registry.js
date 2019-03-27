@@ -1,24 +1,24 @@
-import { MethodManager } from '../../lib/method-manager';
 import { MethodNotFoundError } from 'jpi-errors';
+import { MethodRegistry } from '../../lib/method-registry';
 
-describe('MethodManager', function() {
-	let manager;
+describe('MethodRegistry', function() {
+	let registry;
 
 	beforeEach(function() {
-		manager = new MethodManager();
+		registry = new MethodRegistry();
 	});
 
 	it('creates an empty object for storing methods', function() {
-		expect(manager._methods).to.deep.equal({});
+		expect(registry._methods).to.deep.equal({});
 	});
 
 	describe('#register', function() {
 		it('registers a method with options', function() {
 			const middleware = () => {};
 
-			manager.register({ method: 'foo', bar: 'baz' }, middleware);
+			registry.register({ method: 'foo', bar: 'baz' }, middleware);
 
-			expect(manager._methods).to.deep.equal({
+			expect(registry._methods).to.deep.equal({
 				foo: {
 					options: { bar: 'baz' },
 					middlewares: [ middleware ],
@@ -30,9 +30,9 @@ describe('MethodManager', function() {
 			const mw1 = () => {};
 			const mw2 = () => {};
 
-			manager.register({ method: 'foo', bar: 'baz' }, mw1, mw2);
+			registry.register({ method: 'foo', bar: 'baz' }, mw1, mw2);
 
-			expect(manager._methods).to.deep.equal({
+			expect(registry._methods).to.deep.equal({
 				foo: {
 					options: { bar: 'baz' },
 					middlewares: [ mw1, mw2 ],
@@ -43,9 +43,9 @@ describe('MethodManager', function() {
 		it('supports shorthand for method with no options', function() {
 			const middleware = () => {};
 
-			manager.register('foo', middleware);
+			registry.register('foo', middleware);
 
-			expect(manager._methods).to.deep.equal({
+			expect(registry._methods).to.deep.equal({
 				foo: {
 					options: {},
 					middlewares: [ middleware ],
@@ -57,7 +57,7 @@ describe('MethodManager', function() {
 			const middleware = () => {};
 
 			expect(() => {
-				manager.register({}, middleware);
+				registry.register({}, middleware);
 			}).to.throw('method must be a non-empty string');
 		});
 
@@ -65,7 +65,7 @@ describe('MethodManager', function() {
 			const middleware = () => {};
 
 			expect(() => {
-				manager.register({ method: {} }, middleware);
+				registry.register({ method: {} }, middleware);
 			}).to.throw('method must be a non-empty string');
 		});
 
@@ -73,25 +73,25 @@ describe('MethodManager', function() {
 			const middleware = () => {};
 
 			expect(() => {
-				manager.register({ method: '' }, middleware);
+				registry.register({ method: '' }, middleware);
 			}).to.throw('method must be a non-empty string');
 		});
 	});
 
 	describe('#getMethod', function() {
 		beforeEach(function() {
-			manager._methods.foo = {};
-			manager._methods.bar = {};
+			registry._methods.foo = {};
+			registry._methods.bar = {};
 		});
 
 		it('returns entry for specified method', function() {
-			expect(manager.getMethod('foo')).to.equal(manager._methods.foo);
-			expect(manager.getMethod('bar')).to.equal(manager._methods.bar);
+			expect(registry.getMethod('foo')).to.equal(registry._methods.foo);
+			expect(registry.getMethod('bar')).to.equal(registry._methods.bar);
 		});
 
 		it('throws if specified method does not exist', function() {
 			expect(() => {
-				manager.getMethod('baz');
+				registry.getMethod('baz');
 			}).to.throw(MethodNotFoundError).that.satisfies((err) => {
 				const info = { method: 'baz' };
 				const message = MethodNotFoundError.getDefaultMessage(info);
