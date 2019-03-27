@@ -1,23 +1,20 @@
 import * as responseUtils from '../../lib/response-utils';
 import { ContextManager } from '../../lib/context-manager';
-import { MethodRegistry } from '../../lib/method-registry';
 import { MiddlewareManager } from '../../lib/middleware-manager';
 import { Request } from '../../lib/request';
 import { RequestHandler } from '../../lib/request-handler';
 
 describe('RequestHandler', function() {
-	let request, middlewareManager, methodRegistry, httpRequest, handler;
+	let request, middlewareManager, httpRequest, handler;
 
 	beforeEach(function() {
 		request = new Request();
 		middlewareManager = new MiddlewareManager();
-		methodRegistry = new MethodRegistry();
 		httpRequest = {};
 
 		handler = new RequestHandler(
 			request,
 			middlewareManager,
-			methodRegistry,
 			httpRequest
 		);
 	});
@@ -28,10 +25,6 @@ describe('RequestHandler', function() {
 
 	it('stores provided middleware manager', function() {
 		expect(handler.middlewareManager).to.equal(middlewareManager);
-	});
-
-	it('stores provided method manager', function() {
-		expect(handler.methodRegistry).to.equal(methodRegistry);
 	});
 
 	it('stores provided http request', function() {
@@ -139,7 +132,7 @@ describe('RequestHandler', function() {
 				.get(() => premethodMiddlewares);
 			sinon.stub(middlewareManager, 'postmethod')
 				.get(() => postmethodMiddlewares);
-			sinon.stub(methodRegistry, 'getMethod').returns({
+			sinon.stub(middlewareManager, 'getMethod').returns({
 				middlewares: methodMiddlewares,
 				options: methodOptions,
 			});
@@ -148,9 +141,10 @@ describe('RequestHandler', function() {
 		});
 
 		it('gets method entry for request.method', function() {
-			expect(methodRegistry.getMethod).to.be.calledOnce;
-			expect(methodRegistry.getMethod).to.be.calledOn(methodRegistry);
-			expect(methodRegistry.getMethod).to.be.calledWith(method);
+			expect(middlewareManager.getMethod).to.be.calledOnce;
+			expect(middlewareManager.getMethod)
+				.to.be.calledOn(middlewareManager);
+			expect(middlewareManager.getMethod).to.be.calledWith(method);
 		});
 
 		it('returns a ContextManager with necessary references', function() {

@@ -74,7 +74,6 @@ describe('Request', function() {
 
 	describe('#getResponse', function() {
 		const middlewareManager = { middleware: 'manager' };
-		const methodRegistry = { method: 'manager' };
 		const httpRequest = { http: 'request' };
 		const response = { foo: 'bar' };
 		let request, handler, result;
@@ -87,7 +86,6 @@ describe('Request', function() {
 
 			result = await request.getResponse(
 				middlewareManager,
-				methodRegistry,
 				httpRequest
 			);
 		});
@@ -97,7 +95,6 @@ describe('Request', function() {
 			expect(request._getHandler).to.be.calledOn(request);
 			expect(request._getHandler).to.be.calledWith(
 				middlewareManager,
-				methodRegistry,
 				httpRequest
 			);
 		});
@@ -328,19 +325,13 @@ describe('Request', function() {
 		it('returns a RequestHandler populated with arguments', function() {
 			const request = new Request();
 			const middlewareManager = { middleware: 'manager' };
-			const methodRegistry = { method: 'manager' };
 			const httpRequest = { http: 'request' };
 
-			const result = request._getHandler(
-				middlewareManager,
-				methodRegistry,
-				httpRequest
-			);
+			const result = request._getHandler(middlewareManager, httpRequest);
 
 			expect(result).to.be.an.instanceof(RequestHandler);
 			expect(result.request).to.equal(request);
 			expect(result.middlewareManager).to.equal(middlewareManager);
-			expect(result.methodRegistry).to.equal(methodRegistry);
 			expect(result.httpRequest).to.equal(httpRequest);
 		});
 	});
