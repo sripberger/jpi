@@ -1,30 +1,26 @@
 import * as responseUtils from '../../lib/response-utils';
 import { ContextManager } from '../../lib/context-manager';
-import { MiddlewareManager } from '../../lib/middleware-manager';
+import { Registry } from '../../lib/registry';
 import { Request } from '../../lib/request';
 import { RequestHandler } from '../../lib/request-handler';
 
 describe('RequestHandler', function() {
-	let request, middlewareManager, httpRequest, handler;
+	let request, registry, httpRequest, handler;
 
 	beforeEach(function() {
 		request = new Request();
-		middlewareManager = new MiddlewareManager();
+		registry = new Registry();
 		httpRequest = {};
 
-		handler = new RequestHandler(
-			request,
-			middlewareManager,
-			httpRequest
-		);
+		handler = new RequestHandler(request, registry, httpRequest);
 	});
 
 	it('stores provided Request instance', function() {
 		expect(handler.request).to.equal(request);
 	});
 
-	it('stores provided middleware manager', function() {
-		expect(handler.middlewareManager).to.equal(middlewareManager);
+	it('stores provided registry', function() {
+		expect(handler.registry).to.equal(registry);
 	});
 
 	it('stores provided http request', function() {
@@ -128,11 +124,9 @@ describe('RequestHandler', function() {
 			request.params = params;
 			httpRequest.headers = headers;
 			httpRequest.rawHeaders = rawHeaders;
-			sinon.stub(middlewareManager, 'premethod')
-				.get(() => premethodMiddlewares);
-			sinon.stub(middlewareManager, 'postmethod')
-				.get(() => postmethodMiddlewares);
-			sinon.stub(middlewareManager, 'getMethod').returns({
+			sinon.stub(registry, 'premethod').get(() => premethodMiddlewares);
+			sinon.stub(registry, 'postmethod').get(() => postmethodMiddlewares);
+			sinon.stub(registry, 'getMethod').returns({
 				middlewares: methodMiddlewares,
 				options: methodOptions,
 			});
@@ -141,10 +135,10 @@ describe('RequestHandler', function() {
 		});
 
 		it('gets method entry for request.method', function() {
-			expect(middlewareManager.getMethod).to.be.calledOnce;
-			expect(middlewareManager.getMethod)
-				.to.be.calledOn(middlewareManager);
-			expect(middlewareManager.getMethod).to.be.calledWith(method);
+			expect(registry.getMethod).to.be.calledOnce;
+			expect(registry.getMethod)
+				.to.be.calledOn(registry);
+			expect(registry.getMethod).to.be.calledWith(method);
 		});
 
 		it('returns a ContextManager with necessary references', function() {

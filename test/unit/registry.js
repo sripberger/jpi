@@ -1,12 +1,12 @@
 import { MethodRegistry } from '../../lib/method-registry';
-import { MiddlewareManager } from '../../lib/middleware-manager';
+import { Registry } from '../../lib/registry';
 import { TopoRegistry } from '../../lib/topo-registry';
 
-describe('MiddlewareManager', function() {
+describe('Registry', function() {
 	let manager, _premethod, _postmethod, _methods;
 
 	beforeEach(function() {
-		manager = new MiddlewareManager();
+		manager = new Registry();
 		({ _premethod, _postmethod, _methods } = manager);
 	});
 

@@ -1,51 +1,51 @@
 import { Application } from '../../lib/application';
-import { MiddlewareManager } from '../../lib/middleware-manager';
+import { Registry } from '../../lib/registry';
 
 describe('Application', function() {
-	let application, _manager;
+	let application, _registry;
 
 	beforeEach(function() {
 		application = new Application();
-		({ _manager } = application);
+		({ _registry } = application);
 	});
 
-	it('creates and stores a middleware manager', function() {
-		expect(_manager).to.be.an.instanceof(MiddlewareManager);
+	it('creates and stores a registry', function() {
+		expect(_registry).to.be.an.instanceof(Registry);
 	});
 
 	describe('#registerPremethod', function() {
-		it('passes through to middleware manager', function() {
-			sinon.stub(_manager, 'registerPremethod');
+		it('passes through to registry', function() {
+			sinon.stub(_registry, 'registerPremethod');
 
 			application.registerPremethod('foo', 'bar');
 
-			expect(_manager.registerPremethod).to.be.calledOnce;
-			expect(_manager.registerPremethod).to.be.calledOn(_manager);
-			expect(_manager.registerPremethod).to.be.calledWith('foo', 'bar');
+			expect(_registry.registerPremethod).to.be.calledOnce;
+			expect(_registry.registerPremethod).to.be.calledOn(_registry);
+			expect(_registry.registerPremethod).to.be.calledWith('foo', 'bar');
 		});
 	});
 
 	describe('#registerPostmethod', function() {
-		it('passes through to middleware manager', function() {
-			sinon.stub(_manager, 'registerPostmethod');
+		it('passes through to registry', function() {
+			sinon.stub(_registry, 'registerPostmethod');
 
 			application.registerPostmethod('foo', 'bar');
 
-			expect(_manager.registerPostmethod).to.be.calledOnce;
-			expect(_manager.registerPostmethod).to.be.calledOn(_manager);
-			expect(_manager.registerPostmethod).to.be.calledWith('foo', 'bar');
+			expect(_registry.registerPostmethod).to.be.calledOnce;
+			expect(_registry.registerPostmethod).to.be.calledOn(_registry);
+			expect(_registry.registerPostmethod).to.be.calledWith('foo', 'bar');
 		});
 	});
 
 	describe('registerMethod', function() {
-		it('passes through to middleware manager', function() {
-			sinon.stub(_manager, 'registerMethod');
+		it('passes through to registry', function() {
+			sinon.stub(_registry, 'registerMethod');
 
 			application.registerMethod('foo', 'bar');
 
-			expect(_manager.registerMethod).to.be.calledOnce;
-			expect(_manager.registerMethod).to.be.calledOn(_manager);
-			expect(_manager.registerMethod).to.be.calledWith('foo', 'bar');
+			expect(_registry.registerMethod).to.be.calledOnce;
+			expect(_registry.registerMethod).to.be.calledOn(_registry);
+			expect(_registry.registerMethod).to.be.calledWith('foo', 'bar');
 		});
 	});
 
@@ -55,15 +55,15 @@ describe('Application', function() {
 
 		beforeEach(function() {
 			({ _handle } = application);
-			sinon.stub(_manager, 'finalize');
+			sinon.stub(_registry, 'finalize');
 			sinon.stub(_handle, 'bind').returns(bound);
 
 			result = application.getCallback();
 		});
 
-		it('finalizes middleware manager', function() {
-			expect(_manager.finalize).to.be.calledOnce;
-			expect(_manager.finalize).to.be.calledOn(_manager);
+		it('finalizes registry', function() {
+			expect(_registry.finalize).to.be.calledOnce;
+			expect(_registry.finalize).to.be.calledOn(_registry);
 		});
 
 		it('binds #_handle method to instance', function() {

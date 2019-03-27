@@ -73,7 +73,7 @@ describe('Request', function() {
 	});
 
 	describe('#getResponse', function() {
-		const middlewareManager = { middleware: 'manager' };
+		const registry = { middleware: 'registry' };
 		const httpRequest = { http: 'request' };
 		const response = { foo: 'bar' };
 		let request, handler, result;
@@ -84,19 +84,13 @@ describe('Request', function() {
 			sinon.stub(request, '_getHandler').returns(handler);
 			handler.getResponse.resolves(response);
 
-			result = await request.getResponse(
-				middlewareManager,
-				httpRequest
-			);
+			result = await request.getResponse(registry, httpRequest);
 		});
 
 		it('gets a handler for the request', function() {
 			expect(request._getHandler).to.be.calledOnce;
 			expect(request._getHandler).to.be.calledOn(request);
-			expect(request._getHandler).to.be.calledWith(
-				middlewareManager,
-				httpRequest
-			);
+			expect(request._getHandler).to.be.calledWith(registry, httpRequest);
 		});
 
 		it('gets the response from the handler', function() {
@@ -324,14 +318,14 @@ describe('Request', function() {
 	describe('#_getHandler', function() {
 		it('returns a RequestHandler populated with arguments', function() {
 			const request = new Request();
-			const middlewareManager = { middleware: 'manager' };
+			const registry = { middleware: 'registry' };
 			const httpRequest = { http: 'request' };
 
-			const result = request._getHandler(middlewareManager, httpRequest);
+			const result = request._getHandler(registry, httpRequest);
 
 			expect(result).to.be.an.instanceof(RequestHandler);
 			expect(result.request).to.equal(request);
-			expect(result.middlewareManager).to.equal(middlewareManager);
+			expect(result.registry).to.equal(registry);
 			expect(result.httpRequest).to.equal(httpRequest);
 		});
 	});
