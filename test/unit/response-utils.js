@@ -1,6 +1,13 @@
 import * as jpiErrors from 'jpi-errors';
 import * as wrapErrorModule from '../../lib/wrap-error';
-import { getErrorResponse, getSuccessResponse } from '../../lib/response-utils';
+
+import {
+	getErrorResponse,
+	getSuccessResponse,
+	serializeResponse,
+} from '../../lib/response-utils';
+
+import { SerializationError } from '../../lib/serialization-error';
 
 describe('Response Utils', function() {
 	describe('getSuccessResponse', function() {
@@ -69,6 +76,37 @@ describe('Response Utils', function() {
 
 		it('supports falsy ids', function() {
 			expect(getErrorResponse(err, 0).id).to.equal(0);
+		});
+	});
+
+	describe('serializeResponse', function() {
+		const response = { response: 'object' };
+		const stringified = 'stringifed response';
+
+		beforeEach(function() {
+			// Callthrough is needed here because stingify is used by chai.
+			sinon.stub(JSON, 'stringify').callThrough()
+				.onFirstCall().returns(stringified);
+		});
+
+		it('stringifies response as json', function() {
+			serializeResponse(response);
+
+			expect(JSON.stringify).to.be.calledOnce;
+			expect(JSON.stringify).to.be.calledWith(response);
+		});
+
+		it('returns stringifed response', function() {
+			expect(serializeResponse(response)).to.equal(stringified);
+		});
+
+		it('wraps stringify errors', function() {
+			const err = new Error('Stringify error');
+			JSON.stringify.onFirstCall().throws(err);
+
+			expect(() => {
+				serializeResponse(response);
+			}).to.throw(SerializationError).with.property('cause', err);
 		});
 	});
 });
