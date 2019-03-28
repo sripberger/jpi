@@ -1,3 +1,4 @@
+import * as httpHandlerModule from '../../lib/http-handler';
 import { AppRegistry } from '../../lib/app-registry';
 import { Application } from '../../lib/application';
 
@@ -50,13 +51,10 @@ describe('Application', function() {
 	});
 
 	describe('#getCallback', function() {
-		const bound = () => {};
-		let _handle, result;
+		let result;
 
 		beforeEach(function() {
-			({ _handle } = application);
 			sinon.stub(_registry, 'finalize');
-			sinon.stub(_handle, 'bind').returns(bound);
 
 			result = application.getCallback();
 		});
@@ -66,18 +64,39 @@ describe('Application', function() {
 			expect(_registry.finalize).to.be.calledOn(_registry);
 		});
 
-		it('binds #_handle method to instance', function() {
-			expect(_handle.bind).to.be.calledOnce;
-			expect(_handle.bind).to.be.calledOn(_handle);
-			expect(_handle.bind).to.be.calledWithExactly(application);
+		it('returns a function', function() {
+			expect(result).to.be.an.instanceof(Function);
 		});
 
-		it('returns bound #_handle method', function() {
-			expect(result).to.equal(bound);
-		});
-	});
+		describe('returned function', function() {
+			const httpRequest = { http: 'request' };
+			const httpResponse = { http: 'response' };
+			let HttpHandler, handler;
 
-	describe('#_handle', function() {
-		it('handles the http request and response');
+			beforeEach(function() {
+				handler = sinon.createStubInstance(
+					httpHandlerModule.HttpHandler
+				);
+				HttpHandler = sinon.stub(httpHandlerModule, 'HttpHandler')
+					.returns(handler);
+
+				result(httpRequest, httpResponse);
+			});
+
+			it('creates an http handler', function() {
+				expect(HttpHandler).to.be.calledOnce;
+				expect(HttpHandler).to.be.calledWithNew;
+				expect(HttpHandler).to.be.calledWith(
+					_registry,
+					httpRequest,
+					httpResponse
+				);
+			});
+
+			it('runs the http handler', function() {
+				expect(handler.run).to.be.calledOnce;
+				expect(handler.run).to.be.calledOn(handler);
+			});
+		});
 	});
 });
