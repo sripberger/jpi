@@ -1,12 +1,11 @@
 import { ContextManager } from '../../lib/context-manager';
-import _ from 'lodash';
 
 describe('ContextManager', function() {
 	let context, middlewares, manager;
 
 	beforeEach(function() {
 		context = {};
-		middlewares = {};
+		middlewares = [];
 		manager = new ContextManager(context, middlewares);
 	});
 
@@ -14,102 +13,48 @@ describe('ContextManager', function() {
 		expect(manager.context).to.equal(context);
 	});
 
-	it('stores the provided middlewares object', function() {
+	it('stores the provided middlewares array', function() {
 		expect(manager.middlewares).to.equal(middlewares);
 	});
 
 	describe('#run', function() {
-		let finishedNames, _runMiddlewaresWithName;
-
 		beforeEach(function() {
-			finishedNames = [];
-			_runMiddlewaresWithName = sinon.stub(
-				manager,
-				'_runMiddlewaresWithName'
-			).callsFake((name) => {
-				let expectedNames;
-				switch (name) {
-					case 'premethod':
-						expectedNames = [];
-						break;
-					case 'method':
-						expectedNames = [ 'premethod' ];
-						break;
-					case 'postmethod':
-						expectedNames = [ 'premethod', 'method' ];
-						break;
-					default:
-						return;
-				}
-				return new Promise((resolve, reject) => {
-					if (_.isEqual(finishedNames, expectedNames)) {
-						setImmediate(() => {
-							finishedNames.push(name);
-							resolve();
-						});
-					} else {
-						reject(new Error('Middlewares run out of order'));
-					}
-				});
-			});
+			sinon.stub(manager, '_runMiddlewares').resolves();
 		});
 
-		it('runs all middlewares in the proper order', async function() {
+		it('runs middlewares', async function() {
 			await manager.run();
 
-			expect(_runMiddlewaresWithName).to.be.calledThrice;
-			expect(_runMiddlewaresWithName).to.always.be.calledOn(manager);
-			expect(_runMiddlewaresWithName).to.be.calledWith('premethod');
-			expect(_runMiddlewaresWithName).to.be.calledWith('method');
-			expect(_runMiddlewaresWithName).to.be.calledWith('postmethod');
-			expect(finishedNames).to.deep.equal([
-				'premethod',
-				'method',
-				'postmethod',
-			]);
+			expect(manager._runMiddlewares).to.be.calledOnce;
+			expect(manager._runMiddlewares).to.be.calledOn(manager);
 		});
 
 		it('resolves with the context object', async function() {
 			expect(await manager.run()).to.equal(context);
 		});
-	});
 
-	describe('#_runMiddlewaresWithName', function() {
-		beforeEach(function() {
-			middlewares.foo = [ () => {}, () => {} ];
-			sinon.stub(manager, '_runMiddlewares').resolves();
-		});
+		it('rejects if middleware run rejects', function() {
+			const middlewareErr = new Error('Middleware error');
+			manager._runMiddlewares.rejects(middlewareErr);
 
-		it('runs the middlewares with the provided name', async function() {
-			await manager._runMiddlewaresWithName('foo');
-
-			expect(manager._runMiddlewares).to.be.calledOnce;
-			expect(manager._runMiddlewares).to.be.calledOn(manager);
-			expect(manager._runMiddlewares).to.be.calledWith(middlewares.foo);
-		});
-
-		it('rejects if middlewares reject', function() {
-			const middlwareError = new Error('Middlware error');
-			manager._runMiddlewares.rejects(middlwareError);
-
-			return manager._runMiddlewaresWithName('foo')
+			return manager.run()
 				.then(() => {
 					throw new Error('Promise should have rejected');
 				}, (err) => {
-					expect(err).to.equal(middlwareError);
+					expect(err).to.equal(middlewareErr);
 				});
 		});
 	});
 
 	describe('#_runMiddlewares', function() {
-		it('runs provided middlewares in series', async function() {
+		it('runs middlewares in series', async function() {
 			const mw1 = () => {};
 			const mw2 = () => {};
-			const mws = [ mw1, mw2 ];
 			const _runSingleMiddleware = sinon.stub(
 				manager,
 				'_runSingleMiddleware'
 			);
+			manager.middlewares.push(mw1, mw2);
 
 			_runSingleMiddleware
 				.onFirstCall().callsFake(function() {
@@ -132,7 +77,7 @@ describe('ContextManager', function() {
 					});
 				});
 
-			await manager._runMiddlewares(mws);
+			await manager._runMiddlewares();
 
 			expect(_runSingleMiddleware).to.be.calledTwice;
 			expect(_runSingleMiddleware).to.always.be.calledOn(manager);

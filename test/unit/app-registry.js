@@ -74,10 +74,10 @@ describe('AppRegistry', function() {
 
 	describe('#getMethod', function() {
 		it('returns options and middlewares for the provided method', function() {
-			const premethodMiddlewares = [ () => {}, () => {} ];
-			const postmethodMiddlewares = [ () => {}, () => {} ];
 			const method = 'some method';
 			const options = { foo: 'bar' };
+			const premethodMiddlewares = [ () => {}, () => {} ];
+			const postmethodMiddlewares = [ () => {}, () => {} ];
 			const methodMiddlewares = [ () => {}, () => {} ];
 			sinon.stub(_premethod, 'middlewares')
 				.get(() => premethodMiddlewares);
@@ -95,11 +95,11 @@ describe('AppRegistry', function() {
 			expect(_methods.getMethod).to.be.calledWith(method);
 			expect(result).to.deep.equal({
 				options,
-				middlewares: {
-					premethod: premethodMiddlewares,
-					postmethod: postmethodMiddlewares,
-					method: methodMiddlewares,
-				},
+				middlewares: [
+					...premethodMiddlewares,
+					...methodMiddlewares,
+					...postmethodMiddlewares,
+				],
 			});
 		});
 	});
