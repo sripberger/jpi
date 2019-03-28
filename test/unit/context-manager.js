@@ -1,3 +1,4 @@
+import * as pasync from 'pasync';
 import { ContextManager } from '../../lib/context-manager';
 
 describe('ContextManager', function() {
@@ -19,129 +20,92 @@ describe('ContextManager', function() {
 
 	describe('#run', function() {
 		beforeEach(function() {
-			sinon.stub(manager, '_runMiddlewares').resolves();
+			sinon.stub(pasync, 'eachSeries').resolves();
 		});
 
-		it('runs middlewares', async function() {
+		it('iterates middlewares in series with pasync', async function() {
 			await manager.run();
 
-			expect(manager._runMiddlewares).to.be.calledOnce;
-			expect(manager._runMiddlewares).to.be.calledOn(manager);
+			expect(pasync.eachSeries).to.be.calledOnce;
+			expect(pasync.eachSeries).to.be.calledWith(
+				sinon.match.same(manager.middlewares),
+				sinon.match.func
+			);
 		});
 
 		it('resolves with the context object', async function() {
 			expect(await manager.run()).to.equal(context);
 		});
 
-		it('rejects if middleware run rejects', function() {
-			const middlewareErr = new Error('Middleware error');
-			manager._runMiddlewares.rejects(middlewareErr);
+		it('rejects if eachSeries rejects', function() {
+			const eachError = new Error('Each error');
+			pasync.eachSeries.rejects(eachError);
 
 			return manager.run()
 				.then(() => {
 					throw new Error('Promise should have rejected');
 				}, (err) => {
-					expect(err).to.equal(middlewareErr);
+					expect(err).to.equal(eachError);
 				});
 		});
-	});
 
-	describe('#_runMiddlewares', function() {
-		it('runs middlewares in series', async function() {
-			const mw1 = () => {};
-			const mw2 = () => {};
-			const _runSingleMiddleware = sinon.stub(
-				manager,
-				'_runSingleMiddleware'
-			);
-			manager.middlewares.push(mw1, mw2);
+		describe('iteratee', function() {
+			let iteratee, middleware;
 
-			_runSingleMiddleware
-				.onFirstCall().callsFake(function() {
-					return new Promise((resolve) => {
-						setImmediate(() => {
-							mw1.done = true;
-							resolve();
-						});
-					});
-				})
-				.onSecondCall().callsFake(function() {
-					if (!mw1.done) {
-						throw new Error('Must execute middlewares in series');
-					}
-					return new Promise((resolve) => {
-						setImmediate(() => {
-							mw2.done = true;
-							resolve();
-						});
-					});
-				});
+			beforeEach(async function() {
+				await manager.run();
+				[ , iteratee ] = pasync.eachSeries.firstCall.args;
+				middleware = sinon.stub().named('middleware');
+			});
 
-			await manager._runMiddlewares();
+			it('invokes middleware with context', async function() {
+				await iteratee(middleware);
 
-			expect(_runSingleMiddleware).to.be.calledTwice;
-			expect(_runSingleMiddleware).to.always.be.calledOn(manager);
-			expect(_runSingleMiddleware.firstCall).to.be.calledWith(mw1);
-			expect(_runSingleMiddleware.secondCall).to.be.calledWith(mw2);
-			expect(mw1.done).to.be.true;
-			expect(mw2.done).to.be.true;
-		});
-	});
+				expect(middleware).to.be.calledOnce;
+				expect(middleware).to.be.calledWith(
+					sinon.match.same(manager.context)
+				);
+			});
 
-	describe('#_runSingleMiddleware', function() {
-		let middleware;
+			it('assigns result onto context', async function() {
+				const result = { foo: 'bar' };
+				middleware.returns(result);
 
-		beforeEach(function() {
-			middleware = sinon.stub().named('middleware');
-		});
+				await manager._runMiddleware(middleware);
 
-		it('invokes middleware with context object', async function() {
-			await manager._runSingleMiddleware(middleware);
+				expect(manager.context.result).to.equal(result);
+			});
 
-			expect(middleware).to.be.calledOnce;
-			expect(middleware).to.be.calledWith(
-				sinon.match.same(manager.context)
-			);
-		});
+			it('supports falsy results', async function() {
+				middleware.returns(false);
 
-		it('assigns middleware result onto context', async function() {
-			const result = { foo: 'bar' };
-			middleware.returns(result);
+				await iteratee(middleware);
 
-			await manager._runSingleMiddleware(middleware);
+				expect(manager.context.result).to.be.false;
+			});
 
-			expect(manager.context.result).to.equal(result);
-		});
+			it('does not assign undefined result onto context', async function() {
+				await iteratee(middleware);
 
-		it('supports falsy middleware results', async function() {
-			middleware.returns(false);
+				expect(manager.context).to.not.have.property('result');
+			});
 
-			await manager._runSingleMiddleware(middleware);
+			it('handles async middleware with result', async function() {
+				const result = { foo: 'bar' };
+				middleware.resolves(result);
 
-			expect(manager.context.result).to.be.false;
-		});
+				await iteratee(middleware);
 
-		it('does not assign undefined middleware result onto context', async function() {
-			await manager._runSingleMiddleware(middleware);
+				expect(manager.context.result).to.equal(result);
+			});
 
-			expect(manager.context).to.not.have.property('result');
-		});
+			it('handles async middleware with no result', async function() {
+				middleware.resolves();
 
-		it('handles successful asynchronous middleware with result', async function() {
-			const result = { foo: 'bar' };
-			middleware.resolves(result);
+				await iteratee(middleware);
 
-			await manager._runSingleMiddleware(middleware);
-
-			expect(manager.context.result).to.equal(result);
-		});
-
-		it('handles successful asynchronous middleware with no result', async function() {
-			middleware.resolves();
-
-			await manager._runSingleMiddleware(middleware);
-
-			expect(manager.context).to.not.have.property('result');
+				expect(manager.context).to.not.have.property('result');
+			});
 		});
 	});
 });
