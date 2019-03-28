@@ -69,7 +69,7 @@ describe('Application', function() {
 		it('binds #_handle method to instance', function() {
 			expect(_handle.bind).to.be.calledOnce;
 			expect(_handle.bind).to.be.calledOn(_handle);
-			expect(_handle.bind).to.be.calledWithExactly();
+			expect(_handle.bind).to.be.calledWithExactly(application);
 		});
 
 		it('returns bound #_handle method', function() {
