@@ -248,6 +248,14 @@ describe('HttpHandler', function() {
 	});
 
 	describe('#_prepareHttpResponse', function() {
+		it('attaches a no-op error handler to http response', function() {
+			handler._prepareHttpResponse();
+
+			expect(httpResponse.on).to.be.calledOnce;
+			expect(httpResponse.on).to.be.calledOn(httpResponse);
+			expect(httpResponse.on).to.be.calledWith('error', sinon.match.func);
+		});
+
 		it('sets provided status code on http response', function() {
 			handler._prepareHttpResponse(42);
 
