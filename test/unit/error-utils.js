@@ -1,6 +1,6 @@
 import * as nani from 'nani';
 import { JpiError, ServerError } from 'jpi-errors';
-import { wrapError } from '../../lib/wrap-error';
+import { wrapError } from '../../lib/error-utils';
 
 describe('wrapError', function() {
 	let err;

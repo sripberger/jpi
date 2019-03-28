@@ -1,5 +1,5 @@
+import * as errorUtils from '../../lib/error-utils';
 import * as jpiErrors from 'jpi-errors';
-import * as wrapErrorModule from '../../lib/wrap-error';
 
 import {
 	getErrorResponse,
@@ -44,7 +44,7 @@ describe('Response Utils', function() {
 		let toObject, wrapError, result;
 
 		beforeEach(function() {
-			wrapError = sinon.stub(wrapErrorModule, 'wrapError')
+			wrapError = sinon.stub(errorUtils, 'wrapError')
 				.returns(wrappedError);
 			toObject = sinon.stub(jpiErrors, 'toObject')
 				.returns(converted);
