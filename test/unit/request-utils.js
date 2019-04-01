@@ -8,15 +8,15 @@ describe('Request Utils', function() {
 		let req;
 
 		beforeEach(function() {
-			req = { path: '/', method: 'POST' };
+			req = { url: '/', method: 'POST' };
 		});
 
 		it('does nothing if path and method are valid', function() {
 			validateHttp(req);
 		});
 
-		it('throws if path is not root', function() {
-			req.path = '/path/to/something';
+		it('throws if url path is not root', function() {
+			req.url = '/path/to/something';
 
 			expect(() => {
 				validateHttp(req);
@@ -25,6 +25,18 @@ describe('Request Utils', function() {
 				expect(err.info).to.deep.equal({ statusCode: 404 });
 				return true;
 			});
+		});
+
+		it('allows url search', function() {
+			req.url = '/?foo=bar';
+
+			validateHttp(req);
+		});
+
+		it('allows url hash', function() {
+			req.url = '/#baz';
+
+			validateHttp(req);
 		});
 
 		it('throws if method is not POST', function() {
