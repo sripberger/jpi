@@ -184,9 +184,12 @@ describe('HttpHandler', function() {
 
 	describe('#_handleStatusError', function() {
 		const message = 'some message';
-		const status = 42;
+		const statusCode = 42;
 		const headers = { foo: 'bar' };
-		const err = new HttpStatusError(message, { info: { status, headers } });
+		const err = new HttpStatusError(
+			message,
+			{ info: { statusCode, headers } }
+		);
 
 		beforeEach(function() {
 			sinon.stub(handler, '_prepareHttpResponse');
@@ -198,7 +201,7 @@ describe('HttpHandler', function() {
 			expect(handler._prepareHttpResponse).to.be.calledOnce;
 			expect(handler._prepareHttpResponse).to.be.calledOn(handler);
 			expect(handler._prepareHttpResponse).to.be.calledWith(
-				status,
+				statusCode,
 				headers
 			);
 		});
