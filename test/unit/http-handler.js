@@ -31,60 +31,53 @@ describe('HttpHandler', function() {
 
 	describe('#run', function() {
 		beforeEach(function() {
+			sinon.stub(handler, '_run').resolves();
+			sinon.stub(handler, '_handleLastDitchError');
+		});
+
+		it('runs the handler', async function() {
+			await handler.run();
+
+			expect(handler._run).to.be.calledOnce;
+			expect(handler._run).to.be.calledOn(handler);
+			expect(handler._handleLastDitchError).to.not.be.called;
+		});
+
+		it('handles run errors as last-ditch', async function() {
+			const err = new Error('Run error');
+			handler._run.rejects(err);
+
+			await handler.run();
+
+			expect(handler._handleLastDitchError).to.be.calledOnce;
+			expect(handler._handleLastDitchError).to.be.calledOn(handler);
+			expect(handler._handleLastDitchError).to.be.calledWith(err);
+		});
+	});
+
+	describe('#_run', function() {
+		beforeEach(function() {
 			sinon.stub(handler, '_handleRequest').resolves();
-			sinon.stub(handler, '_handleStatusError');
-			sinon.stub(handler, '_sendErrorResponse');
-			sinon.stub(handler, '_handleUnknownError');
+			sinon.stub(handler, '_handleRequestError');
 		});
 
 		it('handles the request', async function() {
-			await handler.run();
+			await handler._run();
 
 			expect(handler._handleRequest).to.be.calledOnce;
 			expect(handler._handleRequest).to.be.calledOn(handler);
-			expect(handler._handleStatusError).to.not.be.called;
-			expect(handler._sendErrorResponse).to.not.be.called;
-			expect(handler._handleUnknownError).to.not.be.called;
+			expect(handler._handleRequestError).to.not.be.called;
 		});
 
-		it('handles http status errors', async function() {
-			const err = new HttpStatusError();
+		it('handles request handler errors', async function() {
+			const err = new Error('Request handler error');
 			handler._handleRequest.rejects(err);
 
-			await handler.run();
+			await handler._run();
 
-			expect(handler._handleStatusError).to.be.calledOnce;
-			expect(handler._handleStatusError).to.be.calledOn(handler);
-			expect(handler._handleStatusError).to.be.calledWith(err);
-			expect(handler._sendErrorResponse).to.not.be.called;
-			expect(handler._handleUnknownError).to.not.be.called;
-		});
-
-		it('handles other jpi errors', async function() {
-			const err = new JpiError();
-			handler._handleRequest.rejects(err);
-
-			await handler.run();
-
-			expect(handler._sendErrorResponse).to.be.calledOnce;
-			expect(handler._sendErrorResponse).to.be.calledOn(handler);
-			expect(handler._sendErrorResponse).to.be.calledWith(err);
-			expect(handler._handleStatusError).to.not.be.called;
-			expect(handler._handleUnknownError).to.not.be.called;
-		});
-
-		it('handles unknown errors', async function() {
-			const err = new Error('Enknown error');
-
-			handler._handleRequest.rejects(err);
-
-			await handler.run();
-
-			expect(handler._handleUnknownError).to.be.calledOnce;
-			expect(handler._handleUnknownError).to.be.calledOn(handler);
-			expect(handler._handleUnknownError).to.be.calledWith(err);
-			expect(handler._handleStatusError).to.not.be.called;
-			expect(handler._sendErrorResponse).to.not.be.called;
+			expect(handler._handleRequestError).to.be.calledOnce;
+			expect(handler._handleRequestError).to.be.calledOn(handler);
+			expect(handler._handleRequestError).to.be.calledWith(err);
 		});
 	});
 
@@ -120,6 +113,50 @@ describe('HttpHandler', function() {
 			expect(handler._sendResponse).to.be.calledOnce;
 			expect(handler._sendResponse).to.be.calledOn(handler);
 			expect(handler._sendResponse).to.be.calledWith(response);
+		});
+	});
+
+	describe('#_handleRequestError', function() {
+		beforeEach(function() {
+			sinon.stub(handler, '_handleStatusError');
+			sinon.stub(handler, '_sendErrorResponse');
+			sinon.stub(handler, '_handleUnknownError');
+		});
+
+		it('handles http status errors', function() {
+			const err = new HttpStatusError();
+
+			handler._handleRequestError(err);
+
+			expect(handler._handleStatusError).to.be.calledOnce;
+			expect(handler._handleStatusError).to.be.calledOn(handler);
+			expect(handler._handleStatusError).to.be.calledWith(err);
+			expect(handler._sendErrorResponse).to.not.be.called;
+			expect(handler._handleUnknownError).to.not.be.called;
+		});
+
+		it('handles other jpi errors', function() {
+			const err = new JpiError();
+
+			handler._handleRequestError(err);
+
+			expect(handler._sendErrorResponse).to.be.calledOnce;
+			expect(handler._sendErrorResponse).to.be.calledOn(handler);
+			expect(handler._sendErrorResponse).to.be.calledWith(err);
+			expect(handler._handleStatusError).to.not.be.called;
+			expect(handler._handleUnknownError).to.not.be.called;
+		});
+
+		it('handles unknown errors', function() {
+			const err = new Error('Unknown error');
+
+			handler._handleRequestError(err);
+
+			expect(handler._handleUnknownError).to.be.calledOnce;
+			expect(handler._handleUnknownError).to.be.calledOn(handler);
+			expect(handler._handleUnknownError).to.be.calledWith(err);
+			expect(handler._handleStatusError).to.not.be.called;
+			expect(handler._sendErrorResponse).to.not.be.called;
 		});
 	});
 
@@ -194,6 +231,28 @@ describe('HttpHandler', function() {
 		it('sends response for wrapped error', function() {
 			expect(handler._sendErrorResponse).to.be.calledOnce;
 			expect(handler._sendErrorResponse).to.be.calledWith(wrapped);
+		});
+	});
+
+	describe('#_handleLastDitchError', function() {
+		const err = new Error('Last ditch error');
+
+		beforeEach(function() {
+			sinon.stub(handler, '_handleUnknownError');
+		});
+
+		it('handles error as an unknown error', function() {
+			handler._handleLastDitchError(err);
+
+			expect(handler._handleUnknownError).to.be.calledOnce;
+			expect(handler._handleUnknownError).to.be.calledOn(handler);
+			expect(handler._handleUnknownError).to.be.calledWith(err);
+		});
+
+		it('ignores any handling errors', function() {
+			handler._handleUnknownError.throws(new Error('Holy crap.'));
+
+			handler._handleLastDitchError(err);
 		});
 	});
 
