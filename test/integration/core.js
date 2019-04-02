@@ -49,5 +49,32 @@ describe('Core', function() {
 			result: 'hello',
 			id: 'some id',
 		});
+
+		const batchResponse = await request({
+			method: 'POST',
+			uri,
+			body: [ {
+				jsonrpc: '2.0',
+				method: 'echo',
+				params: [ 'foo' ],
+				id: 'foo id',
+			}, {
+				jsonrpc: '2.0',
+				method: 'echo',
+				params: [ 'bar' ],
+				id: 'bar id',
+			} ],
+			json: true,
+		});
+
+		expect(batchResponse).to.deep.equal([ {
+			jsonrpc: '2.0',
+			result: 'foo',
+			id: 'foo id',
+		}, {
+			jsonrpc: '2.0',
+			result: 'bar',
+			id: 'bar id',
+		} ]);
 	});
 });
